@@ -1,12 +1,60 @@
 local async = require("neotest.async")
 local lib = require("neotest.lib")
+local logger = require("neotest.logging")
 local Path = require("plenary.path")
 local xml = require("neotest.lib.xml")
+local xml_tree = require("neotest.lib.xml.tree")
 
 local CTestNeotestAdapter = { name = "neotest-ctest" }
 
 -- TODO: Are these patterns enough?
 CTestNeotestAdapter.root = lib.files.match_root_pattern("build", "CMakeLists.txt", ".git")
+
+-- Returns: a list of filter options to be used by build_spec
+-- TODO: Add unit test
+-- TODO: Need to test for kind? I.e. TEST vs TEST_F vs TEST_P
+local filter_tests = function(position)
+  local test_filter = {}
+
+  if position.type == "test" then
+    test_filter[#test_filter+1] = "-R " .. position.name
+  elseif position.type == "file" then
+    -- In contrast to ctest's -R option (which is used for selecting tests by regex pattern),
+    -- the -I option gives more fine-grained control as to which test to execute based on
+    -- unique test indexes. However, we do not know the test indexes contained in a file
+    -- apriori, so we'll have to execute a ctest dry-run command to gather information
+    -- about all available tests, and then infer the test index by comparing the test
+    -- name in the output with the discovered positions in the file. Note that -I option
+    -- can be specified multiple times, which makes this suitible for filtering tests.
+    -- TODO: Might want to consider vim.jobstart instead. The ctest output can be quite large.
+    local root = CTestNeotestAdapter.root(position.path)
+    local result, output = lib.process.run("ctest", {
+      "--test-dir " .. root .. "/build",
+      "--show-only=json-v1",
+    })
+
+    if result ~= 0 then
+      print(result, output.stdout, output.stderr) -- raise error/warning instead?
+      return {}
+    end
+
+    local json_info = vim.json.decode(output.stdout)
+
+    for index, test in ipairs(json_info.tests) do
+      local parts = vim.fn.split(position.id, "::")
+      local posid = parts[1] .. "." .. parts[2]
+      if test.name == posid then
+        test_filter[#test_filter + 1] = "-I " .. index
+      end
+    end
+  elseif position.type == "suite" then
+    -- NOTE: No need to specify filters since we're running all tests
+  else
+    logger.warn(("%s doesn't support running %ss"):format(CTestNeotestAdapter.name, position.type))
+  end
+
+  return test_filter
+end
 
 function CTestNeotestAdapter.is_test_file(file_path)
   local elems = vim.split(file_path, Path.path.sep, { plain = true })
@@ -37,6 +85,7 @@ function CTestNeotestAdapter.is_test_file(file_path)
   return result
 end
 
+-- TODO: The query should return position.id as FixtureName::TestName
 function CTestNeotestAdapter.discover_positions(path)
   local query = [[
   ((function_definition
@@ -60,48 +109,31 @@ function CTestNeotestAdapter.discover_positions(path)
 end
 
 function CTestNeotestAdapter.build_spec(args)
-  -- TODO: Figure out what is passed through 'args'
+  -- TODO: Unit tests
   local position = args.tree:data()
   local path = position.path
   local root = CTestNeotestAdapter.root(path)
   local junit_path = async.fn.tempname() .. ".junit.xml"
 
-  -- TODO: Need to test for kind? I.e. TEST vs TEST_F vs TEST_P
-  local test_filter
-  if position.type == "test" then
-    -- TODO: confirm
-    local parts = vim.split(position.id, "::", { plain = true })
-    assert(#parts == 3, "bad position")
-    local test_name = parts[3]
-    test_filter = "-R " .. test_name
-  elseif position.type == "namespace" then
-    -- TODO: confirm
-    local parts = vim.split(position.id, "::", { plain = true })
-    assert(#parts == 3, "bad position")
-    local test_namespace = parts[2]
-    test_filter = "-R " .. test_namespace
-  elseif position.type == "file" then
-    -- TODO: I don't think -R option will be useful here.
-    -- The -I option would be more useful, but this requires mapping test numbers/index
-    -- to test names in the file. To gather the mapping, the following must be run:
-    --     `ctest --test-dir build -Q -N --output-log some.log`
-    -- and then parse the output log, and match the test number with the test names.
-    -- NOTE: -I option cam be specified multiple times
-  elseif position.tupe == "dir" then
-    -- TODO: Same method as for file I guess
-  elseif position.type == "suite" then
-    -- NOTE: No need to specify filters since we're running all tests
-  end
+  local test_filters = filter_tests(position)
 
-  local command = vim.tbl_flatten({
+  local command = {
     "ctest",
-    "--test-dir build",
-    "--quiet",
-    --    "--not-tests=ignore",  -- If not tests are found, then ctest will not return an error
+    "--test-dir " .. root .. "/build",
+    "--quiet", -- Do not print to console (only to junit_path)
+    --    "--not-tests=ignore",  -- If no tests are found, then ctest will not return an error
     "--output-on-failure",
     "--output-junit " .. junit_path,
-    vim.list_extend(test_filter or {}, args.extra_args or {}),
-  })
+  }
+
+  if args.extra_args then
+    command = vim.tbl_extend("keep", command, args.extra_args)
+  end
+  if test_filters then
+    command = vim.tbl_extend("keep", command, test_filters)
+  end
+
+  command = vim.tbl_flatten(command)
 
   return { command = command, context = { junit_path = junit_path } }
 end
@@ -117,6 +149,8 @@ function CTestNeotestAdapter.results(spec, result)
   local parser = xml.parser(handler)
   parser:parse(data)
 
+  -- TODO: Not sure the XML tree here (copy-pasted from neotest-rust) is the same structure as
+  -- ctest uses. Will have to test I guess.
   local testcases
   if #handler.root.testsuites.testsuite.testcase == 0 then
     testcases = { handler.root.testsuites.testsuite.testcase }
@@ -127,6 +161,7 @@ function CTestNeotestAdapter.results(spec, result)
   local results = {}
 
   for _, testcase in pairs(testcases) do
+    -- status = one of 'run', 'fail', 'disabled', where run=success and disabled=skipped
     if testcase.failure then
       results[testcase._attr.name] = {
         status = "failed",
@@ -139,35 +174,7 @@ function CTestNeotestAdapter.results(spec, result)
     end
   end
 
-  -- TODO cd back into root workspace?
-
   return results
 end
-
--- TODO Not needed unless setmetatable is used
-local is_callable = function(obj)
-  return type(obj) == "function" or (type(obj) == "table" and obj.__call)
-end
-
--- TODO Document adapter config
-setmetatable(CTestNeotestAdapter, {
-  __call = function(_, opts)
-    is_test_file = opts.is_test_file or is_test_file
-
-    if is_callable(opts.args) then
-      get_args = opts.args
-    elseif opts.args then
-      get_args = function()
-        return opts.args
-      end
-    end
-
-    if type(opts.dap) == "table" then
-      dap_args = opts.dap
-    end
-
-    return CTestNeotestAdapter
-  end,
-})
 
 return CTestNeotestAdapter

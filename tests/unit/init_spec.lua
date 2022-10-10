@@ -46,21 +46,21 @@ describe("neotest-ctest", function()
       },
       {
         {
-          id = "tests::TestFixture::TestError",
+          id = "TestFixture::TestError",
           name = "TestError",
           path = testfile,
           range = { 18, 4, 23, 5 },
           type = "test",
         },
         {
-          id = "tests::nested::TestOk",
+          id = "TestFixture::TestOk",
           name = "TestOk",
           path = testfile,
           range = { 20, 8, 22, 9 },
           type = "test",
         },
         {
-          id = "tests::nested::FailInFixture",
+          id = "TestFixture::FailInFixture",
           name = "FailInFixture",
           path = testfile,
           range = { 20, 8, 22, 9 },

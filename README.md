@@ -18,6 +18,6 @@ TODO
   - gtest style (See cmake docs for google test framework)
 - TODO: Create a How-to
   - Apply this adapter
-  - Configure this adapter
+  - Configure this adapter (TODO)
 - TODO: How to contribute or file issues
 - TODO: Look at how the other adapters have organized their README
