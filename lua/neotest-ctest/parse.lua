@@ -23,8 +23,6 @@ local function extract_captures(
   -- from start of first test to end of last test.
   -- Technically a namespace can be spread across multiple files, but that's
   -- not my problem.
-
-  -- TODO support TEST_P properly with instantiation
   local namespaces = {}
   local tests = {}
   pcall(vim.tbl_add_reverse_lookup, query.captures)
@@ -63,9 +61,7 @@ local function extract_captures(
   return namespaces, tests
 end
 
--- TODO support TEST_P and use the index in the name (0/1/2/3)
----Create a unique id for a position by concatenating its name with names of its
----parents.
+---Create a unique id for a position by concatenating its name with names of its parents.
 ---@param position neotest.Position The position to return an ID for
 ---@param parents neotest.Position[] Parent positions for the position
 local function position_id(position, parents)
@@ -80,8 +76,6 @@ end
 -- Each child is in turn also a level
 -- Thus, {a, {b, {c}}, {d}, {e, {f}, {g}}} represents a(b(c))(d)(e(f,g))
 -- We only have three levels: file, namespace, test
--- We can consider making TEST_P into a nested namespace but that's probably a
--- bad idea. I do not understand the implcations yet.
 
 ---Builds a tree from a list of namespaces and tests extracted from
 ---the file represented by `fileobj`.

@@ -74,7 +74,10 @@ function CTestNeotestAdapter.build_spec(args)
   -- TODO: Maybe allow users to choose whether we should run cmake before
   -- executing tests?
 
-  local test_filters = utils.filter_tests(root, position)
+  local result, test_filters = utils.filter_tests(root, position)
+  if result ~= 0 then
+    return {}
+  end
 
   local command = vim.tbl_flatten({
     "ctest",

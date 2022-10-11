@@ -20,12 +20,11 @@ describe("neotest-ctest", function()
     -- Keywords test and Test
     assert.is_true(plugin.is_test_file("foo/bar/test_foo.cpp"))
     assert.is_true(plugin.is_test_file("foo/bar/Test_foo.cpp"))
-    -- Different fiing conventions
+    -- Different naming conventions
     assert.is_true(plugin.is_test_file("foo/bar/test.foo.cpp"))
     assert.is_true(plugin.is_test_file("foo/bar/foo.Test.cpp"))
     assert.is_true(plugin.is_test_file("foo/bar/fooTest.cpp"))
     assert.is_true(plugin.is_test_file("foo/bar/testFoo.cpp"))
-
     -- Negative test cases (not test files)
     assert.is_false(plugin.is_test_file("foo/bar/other.cpp"))
     assert.is_false(plugin.is_test_file("foo/bar/no_extension"))

@@ -1,12 +1,15 @@
 local logger = require("neotest.logging")
+local lib = require("neotest.lib")
 
 M = {}
 
--- Returns: a list of filter options to be used by build_spec
--- TODO: Add unit test
--- TODO: Need to test for kind? I.e. TEST vs TEST_F vs TEST_P
+-- Returns: (int: result, table: filters)
+-- A non-zero result code indicates error.
+-- On success, a list of filter options is returned which can be used by build_spec
+-- when constructing test command.
 M.filter_tests = function(root, position)
   local test_filter = {}
+  local result = 0
 
   if position.type == "test" then
     test_filter[#test_filter + 1] = "-R " .. position.name
@@ -19,32 +22,35 @@ M.filter_tests = function(root, position)
     -- name in the output with the discovered positions in the file. Note that -I option
     -- can be specified multiple times, which makes this suitible for filtering tests.
     -- TODO: Might want to consider vim.jobstart instead. The ctest output can be quite large.
-    local result, output = lib.process.run("ctest", {
+    local output
+    result, output = lib.process.run("ctest", {
       "--test-dir " .. root .. "/build",
       "--show-only=json-v1",
     })
 
-    if result ~= 0 then
-      print(result, output.stdout, output.stderr) -- raise error/warning instead?
-      return {}
-    end
-
-    local json_info = vim.json.decode(output.stdout)
-
-    for index, test in ipairs(json_info.tests) do
-      local parts = vim.fn.split(position.id, "::")
-      local posid = parts[1] .. "." .. parts[2]
-      if test.name == posid then
-        test_filter[#test_filter + 1] = "-I " .. index
+    if result == 0 then
+      local json_info = vim.json.decode(output.stdout)
+      for index, test in ipairs(json_info.tests) do
+        if test.name == position.id then
+          test_filter[#test_filter + 1] = "-I " .. index
+        end
       end
+    else
+      -- output.stdout and output.stderr are empty if ctest cannot find any tests
+      -- So this message is the best we can do to signal that something went wrong
+      logger.warn(
+        ("%s: failed to run `ctest --test-dir " .. root .. "/build --show-only=json-v1`"):format(
+          require("neotest-ctest").name
+        )
+      )
     end
   elseif position.type == "suite" then
     -- NOTE: No need to specify filters since we're running all tests
   else
-    logger.warn(("%s doesn't support running %ss"):format(CTestNeotestAdapter.name, position.type))
+    logger.warn(("%s: running %ss isn't supported"):format(require("neotest-ctest").name, position.type))
   end
 
-  return test_filter
+  return result, test_filter
 end
 
 return M
