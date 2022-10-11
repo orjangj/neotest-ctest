@@ -11,7 +11,10 @@ describe("neotest-ctest", function()
     local testfile = vim.loop.cwd() .. "/tests/unit/data/src/test.cpp"
     local root = vim.loop.cwd() .. "/tests/unit/data/"
     local positions = plugin.discover_positions(testfile):to_list()
-    local test_filter = utils.filter_tests(root, positions[2][2][1])
+    local result, test_filter = utils.filter_tests(root, positions[2][2][1])
+
+    assert.equals(result, 0)
+
     local expected_filter = { "-R TestError" }
     assert.are.same(test_filter, expected_filter)
   end)
@@ -20,7 +23,10 @@ describe("neotest-ctest", function()
     local testfile = vim.loop.cwd() .. "/tests/unit/data/src/test.cpp"
     local root = vim.loop.cwd() .. "/tests/unit/data/"
     local positions = plugin.discover_positions(testfile):to_list()
-    local test_filter = utils.filter_tests(root, positions[2][1])
+    local result, test_filter = utils.filter_tests(root, positions[2][1])
+
+    assert.equals(result, 0)
+
     local expected_filter = { "-R TestFixture" }
     assert.are.same(test_filter, expected_filter)
   end)

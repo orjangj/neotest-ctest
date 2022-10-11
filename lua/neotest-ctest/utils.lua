@@ -11,7 +11,7 @@ M.filter_tests = function(root, position)
   local test_filter = {}
   local result = 0
 
-  if position.type == "test" then
+  if position.type == "test" or position.type == "namespace" then
     test_filter[#test_filter + 1] = "-R " .. position.name
   elseif position.type == "file" then
     -- In contrast to ctest's -R option (which is used for selecting tests by regex pattern),
