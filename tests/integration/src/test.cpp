@@ -23,4 +23,4 @@ TEST_F(TestFixture, FailInFixture) {
   fail();
 }
 
-} // namespace test_two
+} // namespace test

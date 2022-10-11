@@ -36,6 +36,9 @@ describe("neotest-ctest", function()
     local testfile = vim.loop.cwd() .. "/tests/unit/data/src/test.cpp"
     local positions = plugin.discover_positions(testfile):to_list()
 
+    -- NOTE: ranges are zero indexed
+    -- range = { row start pos, column start pos, row end pos, column end pos}
+    -- For files, only the number of lines of code are necessary { 0, 0, x, 0 }
     local expected_positions = {
       {
         id = testfile,
@@ -46,29 +49,47 @@ describe("neotest-ctest", function()
       },
       {
         {
-          id = "TestFixture::TestError",
-          name = "TestError",
+          id = "TestFixture",
+          name = "TestFixture",
           path = testfile,
-          range = { 18, 4, 23, 5 },
-          type = "test",
+          range = { 10, 0, 23, 1 },
+          type = "namespace",
         },
         {
-          id = "TestFixture::TestOk",
-          name = "TestOk",
-          path = testfile,
-          range = { 20, 8, 22, 9 },
-          type = "test",
+          {
+            id = "TestFixture.TestError",
+            name = "TestError",
+            path = testfile,
+            range = { 10, 0, 13, 1 },
+            type = "test",
+          },
         },
         {
-          id = "TestFixture::FailInFixture",
-          name = "FailInFixture",
-          path = testfile,
-          range = { 20, 8, 22, 9 },
-          type = "test",
+          {
+            id = "TestFixture.TestOk",
+            name = "TestOk",
+            path = testfile,
+            range = { 15, 0, 18, 1 },
+            type = "test",
+          },
+        },
+        {
+          {
+            id = "TestFixture.FailInFixture",
+            name = "FailInFixture",
+            path = testfile,
+            range = { 20, 0, 23, 1 },
+            type = "test",
+          },
         },
       },
     }
 
-    assert.are.same(positions, expected_positions)
+    -- The results are difficult to debug if we do not split the assertions
+    assert.are.same(expected_positions[1], positions[1])
+    assert.are.same(expected_positions[2][1], positions[2][1])
+    assert.are.same(expected_positions[2][2][1], positions[2][2][1])
+    assert.are.same(expected_positions[2][3][1], positions[2][3][1])
+    assert.are.same(expected_positions[2][4][1], positions[2][4][1])
   end)
 end)
