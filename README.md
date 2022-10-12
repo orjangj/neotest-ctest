@@ -1,6 +1,6 @@
 # neotest-ctest
 
-[Neotest](https://github.com/nvim-neotest/nvim-neotest) adapter for C/C++ using (ctest)[https://cmake.org/cmake/help/latest/manual/ctest.1.html] as a test runner.
+[Neotest](https://github.com/nvim-neotest/nvim-neotest) adapter for C/C++ using [ctest](https://cmake.org/cmake/help/latest/manual/ctest.1.html) as a test runner.
 
 This adapter has been inspired by [neotest-gtest](https://github.com/alfaix/neotest-gtest).
 
