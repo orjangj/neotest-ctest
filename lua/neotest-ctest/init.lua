@@ -1,9 +1,12 @@
 local async = require("neotest.async")
+local context_manager = require("plenary.context_manager")
 local lib = require("neotest.lib")
+local open = context_manager.open
 local Path = require("plenary.path")
 local xml = require("neotest.lib.xml")
 local xml_tree = require("neotest.lib.xml.tree")
 local utils = require("neotest-ctest.utils")
+local with = context_manager.with
 
 local CTestNeotestAdapter = { name = "neotest-ctest" }
 
@@ -93,38 +96,57 @@ function CTestNeotestAdapter.build_spec(args)
   return { command = command, context = { junit_path = junit_path } }
 end
 
-function CTestNeotestAdapter.results(spec, result)
+function CTestNeotestAdapter.results(spec, result, tree)
   local data
 
   with(open(spec.context.junit_path, "r"), function(reader)
     data = reader:read("*a")
   end)
 
-  local handler = xml_tree:new()
-  local xml_parser = xml.parser(handler)
-  xml_parser:parse(data)
+  local handler = xml_tree()
+  local parser = xml.parser(handler)
+  parser:parse(data)
 
-  -- TODO: Not sure the XML tree here (copy-pasted from neotest-rust) is the same structure as
-  -- ctest uses. Will have to test I guess.
   local testcases
-  if #handler.root.testsuites.testsuite.testcase == 0 then
-    testcases = { handler.root.testsuites.testsuite.testcase }
+  if handler.root.testsuites ~= nil then
+    -- Multiple testsuites
+    if #handler.root.testsuites.testsuite.testcase == 0 then
+      testcases = { handler.root.testsuites.testsuite.testcase }
+    else
+      testcases = handler.root.testsuites.testsuite.testcase
+    end
   else
-    testcases = handler.root.testsuites.testsuite.testcase
+    -- Single testsuite
+    if #handler.root.testsuite.testcase == 0 then
+      testcases = { handler.root.testsuite.testcase }
+    else
+      testcases = handler.root.testsuite.testcase
+    end
   end
 
   local results = {}
 
   for _, testcase in pairs(testcases) do
-    -- status = one of 'run', 'fail', 'disabled', where run=success and disabled=skipped
-    if testcase.failure then
+    if testcase._attr.status == "fail" then
+      local message = testcase.failure._attr.message
+      if message == "" then
+        message = testcase["system-out"]
+      end
       results[testcase._attr.name] = {
         status = "failed",
-        short = testcase.failure[1],
+        short = message,
+      }
+    elseif testcase._attr.status == "disabled" then
+      results[testcase._attr.name] = {
+        status = "skipped",
+      }
+    elseif testcase._attr.status == "run" then
+      results[testcase._attr.name] = {
+        status = "passed",
       }
     else
       results[testcase._attr.name] = {
-        status = "passed",
+        status = "unknown",
       }
     end
   end

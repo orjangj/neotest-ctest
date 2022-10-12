@@ -11,7 +11,7 @@
     {
       "command" : 
       [
-        "/some/path/to/neotest-ctest/tests/integration/build/test_sample",
+        "neotest-ctest/tests/integration/build/test_sample",
         "--gtest_filter=TestFixture.TestError",
         "--gtest_also_run_disabled_tests"
       ],
@@ -27,14 +27,14 @@
         },
         {
           "name" : "WORKING_DIRECTORY",
-          "value" : "/neotest-ctest/tests/integration/build"
+          "value" : "neotest-ctest/tests/integration/build"
         }
       ]
     },
     {
       "command" : 
       [
-        "/some/path/to/neotest-ctest/tests/integration/build/test_sample",
+        "neotest-ctest/tests/integration/build/test_sample",
         "--gtest_filter=TestFixture.TestOk",
         "--gtest_also_run_disabled_tests"
       ],
@@ -50,14 +50,14 @@
         },
         {
           "name" : "WORKING_DIRECTORY",
-          "value" : "/some/path/to/neotest-ctest/tests/integration/build"
+          "value" : "neotest-ctest/tests/integration/build"
         }
       ]
     },
     {
       "command" : 
       [
-        "/some/path/to/neotest-ctest/tests/integration/build/test_sample",
+        "neotest-ctest/tests/integration/build/test_sample",
         "--gtest_filter=TestFixture.FailInFixture",
         "--gtest_also_run_disabled_tests"
       ],
@@ -73,7 +73,7 @@
         },
         {
           "name" : "WORKING_DIRECTORY",
-          "value" : "/some/path/to/neotest-ctest/tests/integration/build"
+          "value" : "neotest-ctest/tests/integration/build"
         }
       ]
     }
