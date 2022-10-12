@@ -1,5 +1,5 @@
 local M = {}
--- modeled after (copypasted with minimal changes from) neotest/lib/treesitter/init.lua
+-- copy pasted from https://github.com/alfaix/neotest-gtest/blob/main/lua/neotest-gtest/parse.lua (commit: 4f921d14ccaf9ad285ef476c2862754028d0a578)
 
 local async = require("neotest.async")
 local files = require("neotest.lib").files
