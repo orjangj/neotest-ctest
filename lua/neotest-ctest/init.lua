@@ -84,9 +84,9 @@ function CTestNeotestAdapter.build_spec(args)
 
   local command = vim.tbl_flatten({
     "ctest",
-    "--test-dir " .. root .. "/build", -- TODO: Allow configurable build path?
-    "--quiet", -- Do not print to console (only to junit_path)
-    "--no-tests=ignore", -- If no tests are found, then ctest will not return an error
+    "--test-dir " .. root .. "/build",
+    "--quiet",
+--    "--no-tests=ignore",
     "--output-on-failure",
     "--output-junit " .. junit_path,
     vim.tbl_flatten(args.extra_args or {}),
