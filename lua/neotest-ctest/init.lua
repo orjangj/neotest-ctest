@@ -109,9 +109,8 @@ function adapter.build_spec(args)
 
   -- TODO: Maybe allow users to choose whether we should run cmake before
   -- executing tests?
-  local result, test_filters = utils.filter_tests(root, position)
+  local result, test_filters = utils.filter_tests(root, args.tree)
   if result ~= 0 then
-    logger.error("Something went wrong when filtering tests")
     return {}
   end
 
@@ -172,7 +171,42 @@ function adapter.results(spec, result, tree)
     testcases = { testcases }
   end
 
-  return utils.handle_testcases(testcases, tree)
+  local results = {}
+  local discovered_tests = utils.discover_tests(tree)
+
+  if testcases ~= nil then
+    for _, testcase in pairs(testcases) do
+      local id = testcase._attr.name
+      local status = testcase._attr.status
+
+      -- remove handled testcase
+      discovered_tests[id] = nil
+
+      if status == "run" then
+        results[id] = { status = "passed" }
+      elseif status == "fail" then
+        local detailed = testcase["system-out"]
+        local output = async.fn.tempname()
+        local short, start_index, end_index
+
+        _, start_index = string.find(detailed, "%[%s+RUN%s+%] ")
+        end_index, _ = string.find(detailed, "%[%s+FAILED%s+%] ")
+        short = string.sub(detailed, start_index + 1, end_index - 1)
+
+        -- TODO: newlines not preserved
+        vim.fn.writefile({ detailed }, output)
+
+        results[id] = { status = "failed", short = short, output = output }
+      end
+    end
+  end
+
+  -- Mark all other tests not executed by ctest as skipped.
+  for _, id in pairs(discovered_tests) do
+    results[id] = { status = "skipped" }
+  end
+
+  return results
 end
 
 return adapter
