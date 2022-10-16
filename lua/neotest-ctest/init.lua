@@ -19,6 +19,7 @@ local adapter = { name = "neotest-ctest" }
 -- common to place CMakeLists in subdirectories (even in the same directory)
 -- where tests are implemented. So we should probably implement our own
 -- method.
+-- BUG?: Neotest executes neotest-ctest even if build directory does not exist
 adapter.root = lib.files.match_root_pattern("build")
 
 -- Returns false for any directory that should not be considered by neotest
@@ -95,14 +96,14 @@ end
 
 -- TODO: unit tests
 function adapter.build_spec(args)
+  local results_path = async.fn.tempname()
   local position = args.tree:data()
   local path = position.path
   local root = adapter.root(path)
-  local results_path = async.fn.tempname() .. ".junit.xml"
 
   -- Check that test directory exists
-  if not lib.files.is_dir(root .. "/build") then
-    logger.error(adapter.name .. ": Could not find ctest test directory: " .. root .. "/build")
+  if (root == nil) or (not lib.files.is_dir(root .. "/build")) then
+    logger.error(adapter.name .. ": Could not find ctest test directory")
     return {}
   end
 
@@ -134,10 +135,21 @@ function adapter.build_spec(args)
 end
 
 function adapter.results(spec, result, tree)
+  if not spec.context then
+    logger.error(adapter.name .. ": ctest did not run or did not produce results")
+    -- This works even if no testcases exist. Any non-handled test is marked "unknown"
+    return utils.handle_testcases(nil, tree)
+  end
+
   local results_path = spec.context.results_path
   local handler = xml_tree()
   local parser = xml.parser(handler)
   local data
+
+  if not async.fn.filereadable(results_path) then
+    logger.error(adapter.name .. ": ctest result output does not exist")
+    return utils.handle_testcases(nil, tree)
+  end
 
   with(open(results_path, "r"), function(reader)
     data = reader:read("*a")
@@ -145,65 +157,22 @@ function adapter.results(spec, result, tree)
 
   parser:parse(data)
 
-  local testsuite = handler.root.testsuite
-  local testcases = testsuite.testcase
-  local results = {}
-
   -- TODO: Not sure if ctest supports the handler.root.testsuites pattern (multiple testsuites)
-  if testsuite == nil then
-    logger.error("Unable to determine test results since junit output did not contain a testsuite section")
-    return results
-  end
+  local testsuite = nil
+  local testcases = nil
 
-  if testcases == nil then
-    -- There is no output if you're trying to run nearest on a "DISABLED_" test,
-    -- so we'll have to check the tree instead.
-    local nearest = tree:data()
-    if nearest.type == "test" then
-      results[nearest.id] = { status = "skipped" }
-    else
-      logger.error("ctest was called, but no test were executed")
+  if handler.root.testsuite then
+    testsuite = handler.root.testsuite
+    if testsuite.testcase then
+      testcases = testsuite.testcase
     end
-    return results
   end
 
-  if #testcases == 0 then
+  if (testcases ~= nil) and (#testcases == 0) then
     testcases = { testcases }
   end
 
-  for _, testcase in pairs(testcases) do
-    local name = testcase._attr.name
-    local status = testcase._attr.status
-    local output = testcase["system-out"]
-
-    -- TODO: Create a separate tmpfile for system-out of each testcase?
-    -- Not sure about the implications if running several hundred testcases.
-    -- The field results[name].output requires a path to an existing file.
-    if status == "fail" then
-      local short, start_index, end_index
-      _, start_index = string.find(output, "%[%s+RUN%s+%] ")
-      end_index, _ = string.find(output, "%[%s+FAILED%s+%] ")
-      short = string.sub(output, start_index + 1, end_index - 1)
-      results[name] = {
-        status = "failed",
-        short = short,
-        output = results_path
-      }
-    elseif status == "disabled" then
-      -- NOTE: This is a special case. Ctest does not append the DISABLED_ prefix
-      -- even though the test name (as parsed by treesitter) includes it. So we'll
-      -- have to handle it accordingly to get the correct neotest sign.
-      local parts = vim.split(name, ".", { plain = true })
-      local actual_name = parts[1] .. "." .. "DISABLED_" .. parts[2]
-      results[actual_name] = { status = "skipped", output = results_path }
-    elseif status == "run" then
-      results[name] = { status = "passed", output = results_path }
-    else
-      results[name] = { status = "unknown", output = results_path }
-    end
-  end
-
-  return results
+  return utils.handle_testcases(testcases, tree)
 end
 
 return adapter

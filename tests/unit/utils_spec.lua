@@ -13,7 +13,7 @@ describe("neotest-ctest", function()
 
     luassert.equals(result, 0)
 
-    local expected_filter = { "-R TestError" }
+    local expected_filter = { "-R TestFixture.TestError" }
     luassert.are.same(test_filter, expected_filter)
   end)
 

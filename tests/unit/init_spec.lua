@@ -104,52 +104,24 @@ describe("neotest-ctest", function()
     local expected = {
       ["TestFixture.TestError"] = {
         status = "failed",
-        short = [[Running main() from neotest-ctest/tests/integration/build/_deps/googletest-src/googletest/src/gtest_main.cc
-Note: Google Test filter = TestFixture.TestError
-[==========] Running 1 test from 1 test suite.
-[----------] Global test environment set-up.
-[----------] 1 test from TestFixture
-[ RUN      ] TestFixture.TestError
+        short = [[TestFixture.TestError
 neotest-ctest/tests/integration/src/test.cpp:13: Failure
 Value of: false
   Actual: false
 Expected: true
-[  FAILED  ] TestFixture.TestError (0 ms)
-[----------] 1 test from TestFixture (0 ms total)
-
-[----------] Global test environment tear-down
-[==========] 1 test from 1 test suite ran. (0 ms total)
-[  PASSED  ] 0 tests.
-[  FAILED  ] 1 test, listed below:
-[  FAILED  ] TestFixture.TestError
-
- 1 FAILED TEST]],
+]],
       },
       ["TestFixture.TestOk"] = {
         status = "passed",
       },
       ["TestFixture.FailInFixture"] = {
         status = "failed",
-        short = [[Running main() from neotest-ctest/tests/integration/build/_deps/googletest-src/googletest/src/gtest_main.cc
-Note: Google Test filter = TestFixture.FailInFixture
-[==========] Running 1 test from 1 test suite.
-[----------] Global test environment set-up.
-[----------] 1 test from TestFixture
-[ RUN      ] TestFixture.FailInFixture
+        short = [[TestFixture.FailInFixture
 neotest-ctest/tests/integration/src/test.cpp:8: Failure
 Value of: false
   Actual: false
 Expected: true
-[  FAILED  ] TestFixture.FailInFixture (0 ms)
-[----------] 1 test from TestFixture (0 ms total)
-
-[----------] Global test environment tear-down
-[==========] 1 test from 1 test suite ran. (0 ms total)
-[  PASSED  ] 0 tests.
-[  FAILED  ] 1 test, listed below:
-[  FAILED  ] TestFixture.FailInFixture
-
- 1 FAILED TEST]],
+]],
       },
     }
 
