@@ -1,5 +1,4 @@
 local logger = require("neotest.logging")
-local lib = require("neotest.lib")
 
 M = {}
 
@@ -65,39 +64,59 @@ M.filter_tests = function(root, tree)
     -- about all available tests, and then infer the test index by comparing the test
     -- name in the output with the discovered positions in the file. Note that -I option
     -- can be specified multiple times, which makes this suitible for filtering tests.
-    local output
     local command = "ctest --test-dir " .. root .. "/build --show-only=json-v1"
 
-    -- TODO: Might want to consider vim.jobstart instead. The ctest output can be quite large.
-    result, output = lib.process.run({ "sh", "-c", command }, { stdout = true })
+    local jobid = vim.fn.jobstart(command, {
+      cwd = root,
+      stdout_buffered = true,
+      -- TODO: on_stderr doesn't seem to be reliable. Not sure why...
+      -- Checking if stdout was called as expected instead after calling jobwait
+      on_stdout = function(_, data)
+        if not data then
+          return
+        end
 
-    if result == 0 then
-      assert(output.stdout ~= nil, ("Got empty json response from command `%s`"):format(command))
-      local json_info = vim.json.decode(output.stdout)
+        local json = ""
+        local testcases = {}
+        local decoded
+        local indexes
 
-      local testcases = {}
-      for index, test in ipairs(json_info.tests) do
-        testcases[test.name] = index
-      end
+        for _, line in pairs(data) do
+          json = json .. line
+        end
 
-      -- Option: -I start,end,stride,test#,test#,test#,... etc
-      test_filter[1] = "-I 0,0,0"
-      local indexes = M.discover_indexes(tree, testcases)
+        decoded = vim.json.decode(json)
 
-      for _, index in pairs(indexes) do
-        test_filter[1] = test_filter[1] .. "," .. index
-      end
+        for index, test in ipairs(decoded.tests) do
+          testcases[test.name] = index
+        end
+
+        -- Option: -I start,end,stride,test#,test#,test#,... etc
+        test_filter[1] = "-I 0,0,0"
+        indexes = M.discover_indexes(tree, testcases)
+
+        for _, index in pairs(indexes) do
+          test_filter[1] = test_filter[1] .. "," .. index
+        end
+      end,
+    })
+
+    if jobid == 0 or jobid == -1 then
+      logger.error(("neotest-ctest: failed to run `%s`"):format(command))
+      result = 1
     else
-      logger.error(
-        ("%s: failed to run `ctest --test-dir " .. root .. "/build --show-only=json-v1`"):format(
-          require("neotest-ctest").name
-        )
-      )
+      local timeout = 100
+      if vim.fn.jobwait({ jobid }, timeout) == -1 then
+        logger.error(("neotest-ctest: `%s` did not complete within %s ms"):format(command, timeout))
+        result = 1
+      elseif test_filter[1] == nil then
+        result = 1
+      end
     end
   elseif type == "suite" then
     -- NOTE: No need to specify filters since we're running all tests
   else
-    logger.warn(("%s: running %ss isn't supported"):format(require("neotest-ctest").name, type))
+    logger.warn(("neotest-ctest: running %ss isn't supported"):format(type))
   end
 
   return result, test_filter

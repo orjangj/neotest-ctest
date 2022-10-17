@@ -103,7 +103,7 @@ function adapter.build_spec(args)
 
   -- Check that test directory exists
   if (root == nil) or (not lib.files.is_dir(root .. "/build")) then
-    logger.error(adapter.name .. ": Could not find ctest test directory")
+    logger.error("neotest-ctest: Could not find ctest test directory")
     return {}
   end
 
@@ -134,10 +134,22 @@ function adapter.build_spec(args)
 end
 
 function adapter.results(spec, result, tree)
-  if not spec.context then
-    logger.error(adapter.name .. ": ctest did not run or did not produce results")
-    -- This works even if no testcases exist. Any non-handled test is marked "unknown"
-    return utils.handle_testcases(nil, tree)
+  local results = {}
+  local discovered_tests = utils.discover_tests(tree)
+
+  if
+    (spec.context ~= nil)
+    and (spec.context.results_path ~= nil)
+    and (async.fn.filereadable(spec.context.results_path))
+  then
+    -- continue
+  else
+    -- Mark all discovered tests as skipped.
+    logger.error("neotest-ctest: no test results to parse")
+    for _, id in pairs(discovered_tests) do
+      results[id] = { status = "skipped" }
+    end
+    return results
   end
 
   local results_path = spec.context.results_path
@@ -170,9 +182,6 @@ function adapter.results(spec, result, tree)
   if (testcases ~= nil) and (#testcases == 0) then
     testcases = { testcases }
   end
-
-  local results = {}
-  local discovered_tests = utils.discover_tests(tree)
 
   if testcases ~= nil then
     for _, testcase in pairs(testcases) do
