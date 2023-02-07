@@ -1,0 +1,11 @@
+
+Testing:
+- Ensure TEST and TEST_P works
+- Ensure parsing short output works for all assertion methods
+
+Config:
+- Extra arguments to pass to ctest
+  - I.e. --timeout <seconds>  (test it works)
+  -- TODO: Parsing the short output?
+
+

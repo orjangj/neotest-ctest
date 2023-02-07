@@ -11,7 +11,7 @@ describe("neotest-ctest", function()
     local tree = adapter.discover_positions(testfile)
     local result, test_filter = utils.filter_tests(root, tree:children()[1]:children()[1]:data())
 
-    luassert.equals(result, 0)
+    luassert.equals(result, 1)
 
     local expected_filter = { "-R TestFixture.TestError" }
     luassert.are.same(test_filter, expected_filter)

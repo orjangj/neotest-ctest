@@ -2,6 +2,9 @@
 
 > Still Work-in-progress, but the docs illustrates the roadmap for this plugin. This comment will be removed once the adapter is ready for use.
 
+ISSUES:
+- Unable to stop running test
+
 [Neotest](https://github.com/nvim-neotest/nvim-neotest) adapter for C/C++ using [ctest](https://cmake.org/cmake/help/latest/manual/ctest.1.html) as a test runner.
 
 This adapter has been inspired by [neotest-gtest](https://github.com/alfaix/neotest-gtest).
@@ -16,6 +19,9 @@ This adapter has been inspired by [neotest-gtest](https://github.com/alfaix/neot
 
 Test frameworks:
 - [googletest](https://github.com/google/googletest) (macros `TEST`, `TEST_F` and `TEST_P`).
+
+TODO:
+- Consider adding support for other frameworks? Like Catch?
 
 Test capabilities: 
 - Nearest

@@ -23,13 +23,23 @@ local adapter = { name = "neotest-ctest" }
 adapter.root = lib.files.match_root_pattern("build")
 
 -- Returns false for any directory that should not be considered by neotest
+-- while searching for test files.
 function adapter.filter_dir(name)
+  -- Add any directory that should be filtered here
   local dir_filters = {
-    [".git"] = false, -- TODO: Does neotest check hidden folders?
-    ["build"] = false,
+    [".git"] = false,
     [".cache"] = false,
-    ["venv"] = false,
     [".venv"] = false,
+    ["build"] = false,
+    ["venv"] = false,
+    ["submodules"] = false,
+    ["extern"] = false,
+    ["data"] = false,
+    ["cmake"] = false,
+    ["docs"] = false,
+    ["apps"] = false,
+    ["include"] = false,
+    ["libs"] = false,
   }
 
   return dir_filters[name] == nil
@@ -37,7 +47,7 @@ end
 
 function adapter.is_test_file(file_path)
   local elems = vim.split(file_path, Path.path.sep, { plain = true })
-  local filename = elems[#elems]
+  local basename = elems[#elems]
   local test_extensions = {
     ["C"] = true,
     ["cc"] = true,
@@ -48,11 +58,12 @@ function adapter.is_test_file(file_path)
     ["cxx"] = true, -- TODO: more?
   }
 
-  if filename == "" then -- directory
+  if basename == "" then
+    -- directory
     return false
   end
 
-  local extsplit = vim.split(filename, ".", { plain = true })
+  local extsplit = vim.split(basename, ".", { plain = true })
   local extension = extsplit[#extsplit]
 
   -- Return early if file doesn't have correct extension
@@ -60,12 +71,28 @@ function adapter.is_test_file(file_path)
     return false
   end
 
-  -- Don't make assumption on wether test files are prefixed or suffixed
-  -- with [tT]est or [tT]est (which is a very common naming convention though).
-  -- We just check wether the filename contains the words test or Test, and
-  -- hopefully that will capture most patterns.
-  local match = string.find(filename, "[tT]est")
-  return match ~= nil
+  local filename = extsplit[1]
+  -- remove first and last (extension) element
+  extsplit[#extsplit] = nil
+  extsplit[1] = nil
+  -- Build the filename in case basename included multiple `.` in it
+  for _, word in pairs(extsplit) do
+    filename = filename .. "." .. word
+  end
+
+  local match = false
+  if (string.find(filename, "^test[_%.].*") ~= nil) or (string.find(filename, "^Test%u.*") ~= nil) then
+    -- matched starts with
+    match = true
+  elseif (string.find(filename, ".*[_%.]test$") ~= nil) or (string.find(filename, ".*[a-z]Tests?$") ~= nil) then
+    -- matched ends with
+    match = true
+  elseif string.find(filename, ".*[_%.]test[_%.].*") ~= nil then
+    -- matched in-between
+    match = true
+  end
+
+  return match
 end
 
 function adapter.discover_positions(path)
@@ -194,18 +221,22 @@ function adapter.results(spec, result, tree)
       if status == "run" then
         results[id] = { status = "passed" }
       elseif status == "fail" then
+        -- Not sure whether "system-out" is the prefered entry to read in the future,
+        -- but it's the only option we have for now until ctest junit reports have matured.
+        -- See https://gitlab.kitware.com/cmake/cmake/-/issues/22478
         local detailed = testcase["system-out"]
-        local output = async.fn.tempname()
         local short, start_index, end_index
 
-        _, start_index = string.find(detailed, "%[%s+RUN%s+%] ")
+        -- This is a best effort to sanitize system-out to give a short error message
+        -- Seem to work quite well though, but should test some more...
+        _, start_index = string.find(detailed, "%[%s+RUN%s+%] " .. id)
         end_index, _ = string.find(detailed, "%[%s+FAILED%s+%] ")
         short = string.sub(detailed, start_index + 1, end_index - 1)
 
-        -- TODO: newlines not preserved
-        vim.fn.writefile({ detailed }, output)
-
-        results[id] = { status = "failed", short = short, output = output }
+        -- TODO: Not sure it makes much sense pointing output to the entire
+        -- results_path... this is an xml document containing all results,
+        -- which would be inconvenient to navigate if there's a lot of tests...
+        results[id] = { status = "failed", short = short, output = results_path }
       end
     end
   end
