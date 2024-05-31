@@ -1,7 +1,7 @@
 local M = {}
 -- copy pasted from https://github.com/alfaix/neotest-gtest/blob/main/lua/neotest-gtest/parse.lua (commit: 4f921d14ccaf9ad285ef476c2862754028d0a578)
 
-local async = require("neotest.async")
+local nio = require("nio")
 local files = require("neotest.lib").files
 local types = require("neotest.types")
 
@@ -127,7 +127,7 @@ end
 function M.parse_positions_from_string(file_path, query, content)
   local ft = files.detect_filetype(file_path)
   local lang = require("nvim-treesitter.parsers").ft_to_lang(ft)
-  async.util.scheduler()
+  nio.scheduler()
   local parser = vim.treesitter.get_string_parser(content, lang, nil)
   local root = parser:parse()[1]:root()
   local tests_tree = collect_tests(file_path, query, content, root)
@@ -138,7 +138,8 @@ function M.parse_positions_from_string(file_path, query, content)
 end
 
 function M.parse_positions(file_path, query)
-  async.util.sleep(10)
+  -- NOTE: throttle: can cause very high CPU load for large projects and freeze
+  nio.sleep(10)
   local content = files.read(file_path)
   return M.parse_positions_from_string(file_path, query, content)
 end

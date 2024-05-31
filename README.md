@@ -6,6 +6,10 @@
 
 This adapter has been inspired by [neotest-gtest](https://github.com/alfaix/neotest-gtest).
 
+<!-- TODO:
+        Document minimum CMake/CTest requirement
+-->
+
 ## Dependencies
 
 - [neotest](https://github.com/nvim-neotest/nvim-neotest) itself obviously

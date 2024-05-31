@@ -1,29 +1,39 @@
-local async = require("neotest.async")
-local context_manager = require("plenary.context_manager")
+local nio = require("nio")
 local lib = require("neotest.lib")
 local logger = require("neotest.logging")
-local open = context_manager.open
 local parse = require("neotest-ctest.parse")
 local Path = require("plenary.path")
+local Scandir = require("plenary.scandir")
 local xml = require("neotest.lib.xml")
-local xml_tree = require("neotest.lib.xml.tree")
 local utils = require("neotest-ctest.utils")
-local with = context_manager.with
 
 local adapter = { name = "neotest-ctest" }
 
--- TODO: Improve root pattern matching
--- For better accuracy, we should probably test that both a build folder AND
--- a CMakeLists.txt exist in the project root. However, match_root_pattern
--- only checks the inputs independently, so that won't work since it's quite
--- common to place CMakeLists in subdirectories (even in the same directory)
--- where tests are implemented. So we should probably implement our own
--- method.
--- BUG?: Neotest executes neotest-ctest even if build directory does not exist
-adapter.root = lib.files.match_root_pattern("build")
+function adapter.root(dir)
+  local possible_ctest_test_dirs = Scandir.scan_dir(dir, {
+    respect_gitignore = false, -- NOTE: The build directory is almost certainly gitignore'd.
+    depth = 2,
+    search_pattern = "CTestTestfile.cmake",
+    silent = true,
+  })
+
+  -- TODO: logging
+
+  if #possible_ctest_test_dirs == 0 then
+    -- Either the project has not been built, or CTest has not been enabled for any of the
+    -- project configurations
+    return
+  end
+
+  -- Use the first configuration found. This is where we will instruct ctest to look for tests.
+  adapter.test_dir = lib.files.parent(possible_ctest_test_dirs[1])
+
+  return dir
+end
 
 -- Returns false for any directory that should not be considered by neotest
 function adapter.filter_dir(name)
+  -- TODO: Use regex matching instead?
   local dir_filters = {
     [".git"] = false, -- TODO: Does neotest check hidden folders?
     ["build"] = false,
@@ -36,6 +46,7 @@ function adapter.filter_dir(name)
 end
 
 function adapter.is_test_file(file_path)
+  -- TODO: Should query ctest?
   local elems = vim.split(file_path, Path.path.sep, { plain = true })
   local filename = elems[#elems]
   local test_extensions = {
@@ -90,38 +101,29 @@ function adapter.discover_positions(path)
   -- TODO: The parser should probably have its pos.id include path::fixture::test, and the name should be: fixture::test?
   -- Not sure about the consequences of not including the path in the pos.id
   -- Maybe this is the reason nvim crashes?
-  query = vim.treesitter.query.parse_query("cpp", query)
-  return parse.parse_positions(path, query)
+  local treesitter_query = vim.treesitter.query.parse("cpp", query)
+  return parse.parse_positions(path, treesitter_query)
 end
 
 -- TODO: unit tests
 function adapter.build_spec(args)
-  local results_path = async.fn.tempname()
+  local results_path = nio.fn.tempname()
   local position = args.tree:data()
-  local path = position.path
-  local root = adapter.root(path)
 
-  -- Check that test directory exists
-  if (root == nil) or (not lib.files.is_dir(root .. "/build")) then
-    logger.error("neotest-ctest: Could not find ctest test directory")
-    return {}
-  end
-
-  -- TODO: Maybe allow users to choose whether we should run cmake before
-  -- executing tests?
-  local result, test_filters = utils.filter_tests(root, args.tree)
+  local result, test_filters = utils.filter_tests(adapter.test_dir, args.tree)
   if result ~= 0 then
     return {}
   end
 
+  -- TODO: Use vim.iter instead
   local command = vim.tbl_flatten({
     "ctest",
-    "--test-dir " .. root .. "/build",
+    "--test-dir " .. adapter.test_dir,
     "--quiet",
     "--output-on-failure",
     "--output-junit " .. results_path,
-    vim.tbl_flatten(args.extra_args or {}),
-    vim.tbl_flatten(test_filters or {}),
+    vim.iter(args.extra_args or {}):flatten(),
+    vim.iter(test_filters or {}):flatten(),
   })
 
   return {
@@ -140,7 +142,7 @@ function adapter.results(spec, result, tree)
   if
     (spec.context ~= nil)
     and (spec.context.results_path ~= nil)
-    and (async.fn.filereadable(spec.context.results_path))
+    and (nio.fn.filereadable(spec.context.results_path))
   then
     -- continue
   else
@@ -153,31 +155,18 @@ function adapter.results(spec, result, tree)
   end
 
   local results_path = spec.context.results_path
-  local handler = xml_tree()
-  local parser = xml.parser(handler)
-  local data
 
-  if not async.fn.filereadable(results_path) then
+  if not nio.fn.filereadable(results_path) then
     logger.error(adapter.name .. ": ctest result output does not exist")
     return utils.handle_testcases(nil, tree)
   end
 
-  with(open(results_path, "r"), function(reader)
-    data = reader:read("*a")
-  end)
-
-  parser:parse(data)
+  local content = lib.files.read(results_path)
+  local handler = xml.parse(content)
 
   -- TODO: Not sure if ctest supports the handler.root.testsuites pattern (multiple testsuites)
-  local testsuite = nil
-  local testcases = nil
-
-  if handler.root.testsuite then
-    testsuite = handler.root.testsuite
-    if testsuite.testcase then
-      testcases = testsuite.testcase
-    end
-  end
+  local testsuite = handler.root and handler.root.testsuite or handler.testsuite
+  local testcases = testsuite.testcase or nil
 
   if (testcases ~= nil) and (#testcases == 0) then
     testcases = { testcases }
@@ -195,7 +184,7 @@ function adapter.results(spec, result, tree)
         results[id] = { status = "passed" }
       elseif status == "fail" then
         local detailed = testcase["system-out"]
-        local output = async.fn.tempname()
+        local output = nio.fn.tempname()
         local short, start_index, end_index
 
         _, start_index = string.find(detailed, "%[%s+RUN%s+%] ")
@@ -205,7 +194,7 @@ function adapter.results(spec, result, tree)
         -- TODO: newlines not preserved
         vim.fn.writefile({ detailed }, output)
 
-        results[id] = { status = "failed", short = short, output = output }
+        results[id] = { status = "failed", short = short }
       end
     end
   end
