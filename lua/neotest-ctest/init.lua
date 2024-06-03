@@ -1,133 +1,86 @@
 local nio = require("nio")
 local lib = require("neotest.lib")
-local logger = require("neotest.logging")
 local parse = require("neotest-ctest.parse")
-local Path = require("plenary.path")
-local Scandir = require("plenary.scandir")
 local xml = require("neotest.lib.xml")
-local utils = require("neotest-ctest.utils")
+local ctest = require("neotest-ctest.ctest")
 
+---@type neotest.Adapter
 local adapter = { name = "neotest-ctest" }
 
 function adapter.root(dir)
-  local possible_ctest_test_dirs = Scandir.scan_dir(dir, {
-    respect_gitignore = false, -- NOTE: The build directory is almost certainly gitignore'd.
-    depth = 2,
-    search_pattern = "CTestTestfile.cmake",
-    silent = true,
-  })
-
-  -- TODO: logging
-
-  if #possible_ctest_test_dirs == 0 then
-    -- Either the project has not been built, or CTest has not been enabled for any of the
-    -- project configurations
-    return
-  end
-
-  -- Use the first configuration found. This is where we will instruct ctest to look for tests.
-  adapter.test_dir = lib.files.parent(possible_ctest_test_dirs[1])
-
-  return dir
+  return lib.files.match_root_pattern("CMakeLists.txt")(dir)
 end
 
--- Returns false for any directory that should not be considered by neotest
-function adapter.filter_dir(name)
-  -- TODO: Use regex matching instead?
+function adapter.filter_dir(name, _, _)
   local dir_filters = {
-    [".git"] = false, -- TODO: Does neotest check hidden folders?
     ["build"] = false,
-    [".cache"] = false,
+    ["out"] = false,
     ["venv"] = false,
-    [".venv"] = false,
   }
 
   return dir_filters[name] == nil
 end
 
 function adapter.is_test_file(file_path)
-  -- TODO: Should query ctest?
-  local elems = vim.split(file_path, Path.path.sep, { plain = true })
-  local filename = elems[#elems]
-  local test_extensions = {
-    ["C"] = true,
-    ["cc"] = true,
-    ["cpp"] = true,
-    ["CPP"] = true,
-    ["c++"] = true,
-    ["cp"] = true,
-    ["cxx"] = true, -- TODO: more?
-  }
+  local elems = vim.split(file_path, lib.files.sep, { plain = true })
+  local name, extension = unpack(vim.split(elems[#elems], ".", { plain = true }))
 
-  if filename == "" then -- directory
-    return false
-  end
+  local supported_extensions = { "cpp", "cc", "cxx" }
 
-  local extsplit = vim.split(filename, ".", { plain = true })
-  local extension = extsplit[#extsplit]
-
-  -- Return early if file doesn't have correct extension
-  if test_extensions[extension] == nil then
-    return false
-  end
-
-  -- Don't make assumption on wether test files are prefixed or suffixed
-  -- with [tT]est or [tT]est (which is a very common naming convention though).
-  -- We just check wether the filename contains the words test or Test, and
-  -- hopefully that will capture most patterns.
-  local match = string.find(filename, "[tT]est")
-  return match ~= nil
+  return vim.tbl_contains(supported_extensions, extension) and vim.endswith(name, "_test") or false
 end
 
 function adapter.discover_positions(path)
-  local query = [[
-    ((function_definition
-    	declarator: (
-          function_declarator
-            declarator: (identifier) @test.kind
-          parameters: (
-            parameter_list
-              . (parameter_declaration type: (type_identifier) !declarator) @namespace.name
-              . (parameter_declaration type: (type_identifier) !declarator) @test.name
-              .
-          )
-        )
-        !type
-    )
-    (#any-of? @test.kind "TEST" "TEST_F" "TEST_P"))
-    @test.definition
-  ]]
-
-  -- TODO: The parser should probably have its pos.id include path::fixture::test, and the name should be: fixture::test?
-  -- Not sure about the consequences of not including the path in the pos.id
-  -- Maybe this is the reason nvim crashes?
-  local treesitter_query = vim.treesitter.query.parse("cpp", query)
-  return parse.parse_positions(path, treesitter_query)
+  local framework = require("neotest-ctest.frameworks.gtest")
+  local parsed_query = vim.treesitter.query.parse(framework.lang, framework.query)
+  return parse.parse_positions(path, parsed_query)
 end
 
--- TODO: unit tests
+---@param args neotest.RunArgs
 function adapter.build_spec(args)
-  local results_path = nio.fn.tempname()
   local position = args.tree:data()
+  local root = adapter.root(position.path)
+  local test_dir = ctest.find_test_directory(root)
 
-  local result, test_filters = utils.filter_tests(adapter.test_dir, args.tree)
-  if result ~= 0 then
-    return {}
+  if not test_dir then
+    error("CTest test directory not found")
+    return nil
   end
 
-  -- TODO: Use vim.iter instead
-  local command = vim.tbl_flatten({
+  local results_path = nio.fn.tempname()
+
+  local command = {
     "ctest",
-    "--test-dir " .. adapter.test_dir,
     "--quiet",
     "--output-on-failure",
-    "--output-junit " .. results_path,
-    vim.iter(args.extra_args or {}):flatten(),
-    vim.iter(test_filters or {}):flatten(),
-  })
+    "--output-junit",
+    results_path,
+  }
+
+  if root ~= position.path then
+    -- filter tests to run
+    local testcases = ctest.testcases(test_dir)
+    local tests_to_run = {}
+    for _, node in args.tree:iter() do
+      if node.type == "test" then
+        -- NOTE: If the node.id is not known by CTest (testcases[node.id] == nil), then
+        -- it will be marked as 'skipped' when parsing test results.
+        table.insert(tests_to_run, testcases[node.id])
+      end
+    end
+
+    -- NOTE: The '-I Start,End,Stride,test#,test#,...' option runs the specified tests in the
+    -- range starting from number Start, ending at number End, incremented by number Stride.
+    -- If Start, End and Stride are set to 0, then CTest will run all test# as specified.
+    local filter = string.format("-I 0,0,0,%s", table.concat(tests_to_run, ","))
+    table.insert(command, filter)
+  else
+    -- NOTE: Run all tests known by CTest
+  end
 
   return {
     command = table.concat(command, " "),
+    cwd = test_dir,
     context = {
       results_path = results_path,
       file = position.path,
@@ -137,71 +90,61 @@ end
 
 function adapter.results(spec, result, tree)
   local results = {}
-  local discovered_tests = utils.discover_tests(tree)
+  local content = lib.files.read(spec.context.results_path)
+  local junit = xml.parse(content)
+  local testsuite = junit.testsuite
+  local testcases = tonumber(testsuite._attr.tests) < 2 and { testsuite.testcase } or testsuite.testcase
 
-  if
-    (spec.context ~= nil)
-    and (spec.context.results_path ~= nil)
-    and (nio.fn.filereadable(spec.context.results_path))
-  then
-    -- continue
-  else
-    -- Mark all discovered tests as skipped.
-    logger.error("neotest-ctest: no test results to parse")
-    for _, id in pairs(discovered_tests) do
-      results[id] = { status = "skipped" }
+  -- Gather all test results in a friendly to use format
+  local ctest_results = {}
+  for _, testcase in pairs(testcases) do
+    ctest_results[testcase._attr.name] = {
+      status = testcase._attr.status,
+      message = testcase["system-out"],
+    }
+  end
+
+  local discovered_tests = {}
+  for _, node in tree:iter() do
+    if node.type == "test" then
+      table.insert(discovered_tests, node)
     end
-    return results
   end
 
-  local results_path = spec.context.results_path
+  -- TODO: file/dir/namespace are marked as passed when all tests are skipped
+  -- Not sure if this is the intended behavior of Neotest, or if I'm doing something wrong.
 
-  if not nio.fn.filereadable(results_path) then
-    logger.error(adapter.name .. ": ctest result output does not exist")
-    return utils.handle_testcases(nil, tree)
-  end
+  for _, test in pairs(discovered_tests) do
+    local candidate = ctest_results[test.id]
 
-  local content = lib.files.read(results_path)
-  local handler = xml.parse(content)
+    if not candidate then
+      -- NOTE: Not executed/known by CTest
+      results[test.id] = { status = "skipped" }
+    else
+      if candidate.status == "run" then
+        results[test.id] = { status = "passed" }
+      elseif candidate.status == "fail" then
+        local short = vim.trim(string.match(candidate.message, "%[%s+RUN%s+%](.-)%[%s+FAILED%s+%]"))
+        local linenr, reason = require("neotest-ctest.frameworks.gtest").parse_error_message(short)
 
-  -- TODO: Not sure if ctest supports the handler.root.testsuites pattern (multiple testsuites)
-  local testsuite = handler.root and handler.root.testsuite or handler.testsuite
-  local testcases = testsuite.testcase or nil
-
-  if (testcases ~= nil) and (#testcases == 0) then
-    testcases = { testcases }
-  end
-
-  if testcases ~= nil then
-    for _, testcase in pairs(testcases) do
-      local id = testcase._attr.name
-      local status = testcase._attr.status
-
-      -- remove handled testcase
-      discovered_tests[id] = nil
-
-      if status == "run" then
-        results[id] = { status = "passed" }
-      elseif status == "fail" then
-        local detailed = testcase["system-out"]
         local output = nio.fn.tempname()
-        local short, start_index, end_index
+        lib.files.write(output, candidate.message)
 
-        _, start_index = string.find(detailed, "%[%s+RUN%s+%] ")
-        end_index, _ = string.find(detailed, "%[%s+FAILED%s+%] ")
-        short = string.sub(detailed, start_index + 1, end_index - 1)
-
-        -- TODO: newlines not preserved
-        vim.fn.writefile({ detailed }, output)
-
-        results[id] = { status = "failed", short = short }
+        results[test.id] = {
+          status = "failed",
+          short = short,
+          output = output,
+          errors = {
+            {
+              line = linenr - 1, -- NOTE: Neotest adds 1 for some reason.
+              message = reason,
+            },
+          },
+        }
+      else
+        results[test.id] = { status = "skipped" }
       end
     end
-  end
-
-  -- Mark all other tests not executed by ctest as skipped.
-  for _, id in pairs(discovered_tests) do
-    results[id] = { status = "skipped" }
   end
 
   return results
