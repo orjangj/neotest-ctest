@@ -1,7 +1,7 @@
 local M = {}
 
+M.name = "GoogleTest"
 M.lang = "cpp"
-
 M.query = [[
     ((function_definition
     	declarator: (
