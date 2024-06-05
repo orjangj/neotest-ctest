@@ -10,7 +10,7 @@ M.supported_frameworks = {
 local function make_include_query(name)
   local filters = {}
 
-  local system_lib_string_query = ([[
+  local system_query = ([[
     ;; query
     (preproc_include
       path: (system_lib_string) @system.include
@@ -18,16 +18,16 @@ local function make_include_query(name)
     )
   ]]):format(name, name, name)
 
-  local string_literal_query = ([[
+  local local_query = ([[
     ;; query
     (preproc_include
-      path: (string_literal (string_content)) @string.include
-      (#any-of? @string.include "\"%s.h\"" "\"%s/%s.h\"")
+      path: (string_literal (string_content)) @local.include
+      (#any-of? @local.include "\"%s.h\"" "\"%s/%s.h\"")
     )
   ]]):format(name, name, name)
 
-  table.insert(filters, system_lib_string_query)
-  table.insert(filters, string_literal_query)
+  table.insert(filters, system_query)
+  table.insert(filters, local_query)
 
   return table.concat(filters, "\n")
 end
@@ -55,9 +55,7 @@ local function has_matches(query, content, lang)
 end
 
 M.detect = function(file_path)
-  -- TODO: Use frameworks = config.frameworks or M.supported_frameworks
-  -- to allow users to select range and order of priority
-
+  -- TODO: throttle?
   local content = lib.files.read(file_path)
 
   for name, framework in pairs(M.supported_frameworks) do

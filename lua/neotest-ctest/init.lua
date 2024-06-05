@@ -36,8 +36,7 @@ function adapter.discover_positions(path)
     return
   end
 
-  local parsed_query = vim.treesitter.query.parse(framework.lang, framework.query)
-  return require("neotest-ctest.parse").parse_positions(path, parsed_query)
+  return framework.parse_positions(path)
 end
 
 ---@param args neotest.RunArgs
@@ -46,6 +45,8 @@ function adapter.build_spec(args)
   if not tree then
     return
   end
+
+  --vim.notify(vim.inspect(tree))
 
   local supported_types = { "test", "namespace", "file" }
   local position = tree:data()
@@ -66,9 +67,9 @@ function adapter.build_spec(args)
   local runnable_tests = {}
   for _, node in tree:iter() do
     if node.type == "test" then
-      -- NOTE: If the node.id is not known by CTest (testcases[node.id] == nil), then
+      -- NOTE: If the node.name is not known by CTest (testcases[node.name] == nil), then
       -- it will be marked as 'skipped' when parsing test results.
-      table.insert(runnable_tests, testcases[node.id])
+      table.insert(runnable_tests, testcases[node.name])
     end
   end
 
@@ -125,7 +126,7 @@ function adapter.results(spec, result, tree)
   -- Not sure if this is the intended behavior of Neotest, or if I'm doing something wrong.
 
   for _, test in pairs(discovered_tests) do
-    local candidate = ctest_results[test.id]
+    local candidate = ctest_results[test.name]
 
     if not candidate then
       -- NOTE: Not known to CTest
