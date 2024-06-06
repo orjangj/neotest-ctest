@@ -3,37 +3,30 @@
 <!-- TODO:
     - TOC in README
     - Document nice features: framework auto-detection, ctest test directory detection
-    - Document limitations (only one test_dir supported)
-    - Document known issues (file/dir incorrectly marked as passed when all tests are skipped)
-    - Move all ctest related functionality into its own module
-      -- Check CTest version, and produce error if not larger than 3.21 (do it in setup func?)
-    - Move all framework dependent functionality into its own module
-        - generating positions
-        - parsing positions
-        - parsing results
+    - Document known issues (file/dir/namespace incorrectly marked as passed when all tests are skipped)
     - Prettify ugly ctest result output
     - File management (nio.fn.tempname() and cleanup -- keep history?)
     - Error handling
     - Document functions
-    - User configuration
+    - Support user configuration
       - extra-args: --verbose --schedule-random --timeout <time>
+      - is_test_file
+      - filter_dir
+      - framework selection, ordering, priority (set desired framework, or order/priority in detection algo)
     - Semantic versioning and changelog
     - Contribution guide
     - Style guide  (stylua)
     - neoconf
     - Unit tests
-    - Inspired by neotest-gtest and neotest-haskell
-    - BUGS?
-      - Passed tests should also show test results (with time to run)
-      - Parametrized tests working? I.e. TEST_P in GTest
 
-  -- Use frameworks = config.frameworks or M.supported_frameworks
-  -- to allow users to select range and order of priority... or even bypass detection
-  -- by setting the desired framework to work with
+  -- TODO: file/dir/namespace are marked as passed when all tests are skipped
+  -- Not sure if this is the intended behavior of Neotest, or if I'm doing something wrong.
 
 -- Limitations
 -- No colored output: https://gitlab.kitware.com/cmake/cmake/-/issues/17620
 -- JUnit compatibility: https://gitlab.kitware.com/cmake/cmake/-/issues/22478
+-- Parametrized tests working? I.e. TEST_P in GTest (how to display in neotest UI?)
+-- Auto-detection of test directory will select the first found
 
 
 -->
@@ -46,7 +39,7 @@
 runner.
 
 This adapter has been inspired by
-[neotest-gtest](https://github.com/alfaix/neotest-gtest).
+[neotest-gtest](https://github.com/alfaix/neotest-gtest), [neotest-haskell](https://github.com/mrcjkb/neotest-haskell)
 
 ## Supported Test Frameworks
 

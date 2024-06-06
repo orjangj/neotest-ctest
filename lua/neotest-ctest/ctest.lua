@@ -1,10 +1,9 @@
 local lib = require("neotest.lib")
-local scandir = require("plenary.scandir")
 local nio = require("nio")
 
-local M = {}
+local ctest = {}
 
-M.run = function(test_dir, args)
+local function run(test_dir, args)
   local runner = nio.process.run({
     cmd = "ctest",
     cwd = test_dir,
@@ -21,10 +20,62 @@ M.run = function(test_dir, args)
   return output
 end
 
-M.testcases = function(test_dir)
+function ctest:new(cwd)
+  local ctest_roots = require("plenary.scandir").scan_dir(cwd, {
+    respect_gitignore = false,
+    depth = 3, -- NOTE: support multi-config projects
+    search_pattern = "CTestTestfile.cmake",
+    silent = true,
+  })
+
+  local test_dir = next(ctest_roots) and lib.files.parent(ctest_roots[1]) or nil
+
+  if not test_dir then
+    error("Failed to locate CTest test directory")
+  end
+
+  local version = run(test_dir, { "--version" })
+
+  if not version then
+    error("Failed to determine CTest version")
+  end
+
+  local major, minor, _ = string.match(version, "(%d+)%.(%d+)%.(%d+)")
+  if not (tonumber(major) >= 3 and tonumber(minor) >= 21) then
+    error("CTest version 3.21+ is required!")
+  end
+
+  local results_path = nio.fn.tempname()
+
+  local session = {
+    _test_dir = test_dir,
+    _results_path = results_path,
+  }
+  setmetatable(session, self)
+  self.__index = self
+  return session
+end
+
+function ctest:command(args)
+  args = args or {}
+  local command = {
+    "ctest",
+    "--test-dir",
+    self._test_dir,
+    "--quiet",
+    "--output-on-failure",
+    "--output-junit",
+    self._results_path,
+    table.concat(args, " "),
+  }
+
+  return table.concat(command, " ")
+end
+
+function ctest:testcases()
   local testcases = {}
 
-  local output = M.run(test_dir, { "--show-only=json-v1" })
+  local output = run(self._test_dir, { "--show-only=json-v1" })
 
   if output then
     output = string.gsub(output, "[\n\r]", "")
@@ -40,17 +91,46 @@ M.testcases = function(test_dir)
   return testcases
 end
 
--- TODO: Document
--- Use the first configuration found, or nil if not found
-M.find_test_directory = function(cwd)
-  local ctest_roots = scandir.scan_dir(cwd, {
-    respect_gitignore = false,
-    depth = 3, -- NOTE: support multi-config projects
-    search_pattern = "CTestTestfile.cmake",
-    silent = true,
-  })
+function ctest:parse_test_results()
+  local content = lib.files.read(self._results_path) -- TODO: error handling
+  local junit = lib.xml.parse(content)
+  local testsuite = junit.testsuite
+  local testcases = tonumber(testsuite._attr.tests) < 2 and { testsuite.testcase } or testsuite.testcase
 
-  return next(ctest_roots) and lib.files.parent(ctest_roots[1]) or nil
+  local results = {}
+
+  -- NOTE: CTest doesn't seem to populate the testsuite._attr.time, so we'll have to
+  -- compute it ourselves.
+  local total_time = 0
+
+  for _, testcase in pairs(testcases) do
+    local name = testcase._attr.name
+    local status = testcase._attr.status
+    local time = testcase._attr.time
+    total_time = total_time + time
+    local output = testcase["system-out"]
+    local error = {}
+
+    if status == "fail" then
+      error.message = vim.trim(string.match(testcase["system-out"], "%[%s+RUN%s+%](.-)%[%s+FAILED%s+%]"))
+    end
+
+    results[name] = {
+      status = status,
+      time = time,
+      output = output,
+      error = error,
+    }
+  end
+
+  results.summary = {
+    tests = testsuite._attr.tests,
+    failures = testsuite._attr.failures,
+    skipped = testsuite._attr.skipped,
+    time = total_time,
+  }
+
+  return results
 end
 
-return M
+return ctest

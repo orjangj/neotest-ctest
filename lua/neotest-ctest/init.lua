@@ -1,7 +1,6 @@
 local logger = require("neotest.logging")
 local nio = require("nio")
 local lib = require("neotest.lib")
-local ctest = require("neotest-ctest.ctest")
 
 ---@type neotest.Adapter
 local adapter = { name = "neotest-ctest" }
@@ -46,24 +45,17 @@ function adapter.build_spec(args)
     return
   end
 
-  --vim.notify(vim.inspect(tree))
-
   local supported_types = { "test", "namespace", "file" }
   local position = tree:data()
   if not vim.tbl_contains(supported_types, position.type) then
     return
   end
 
-  local root = adapter.root(position.path)
-  local test_dir = ctest.find_test_directory(root)
-  if not test_dir then
-    error("Failed to locate CTest test directory")
-  end
-
-  local framework = require("neotest-ctest.framework").detect(position.path)
+  local root = adapter.root(position.path) or vim.loop.cwd()
+  local ctest = require("neotest-ctest.ctest"):new(root)
 
   -- Collect runnable tests (known to CTest)
-  local testcases = ctest.testcases(test_dir)
+  local testcases = ctest:testcases()
   local runnable_tests = {}
   for _, node in tree:iter() do
     if node.type == "test" then
@@ -78,42 +70,23 @@ function adapter.build_spec(args)
   -- If Start, End and Stride are set to 0, then CTest will run all test# as specified.
   local filter = string.format("-I 0,0,0,%s", table.concat(runnable_tests, ","))
 
-  local results_path = nio.fn.tempname()
-
-  local command = {
-    "ctest",
-    "--quiet",
-    "--output-on-failure",
-    "--output-junit",
-    results_path,
-    filter
-  }
+  local command = ctest:command({ filter })
+  local framework = require("neotest-ctest.framework").detect(position.path)
 
   return {
-    command = table.concat(command, " "),
-    cwd = test_dir,
+    command = command,
     context = {
-      results_path = results_path,
+      ctest = ctest,
       framework = framework,
     },
   }
 end
 
-function adapter.results(spec, result, tree)
+function adapter.results(spec, _, tree)
   local results = {}
-  local content = lib.files.read(spec.context.results_path)
-  local junit = lib.xml.parse(content)
-  local testsuite = junit.testsuite
-  local testcases = tonumber(testsuite._attr.tests) < 2 and { testsuite.testcase } or testsuite.testcase
+  local context = spec.context
 
-  -- Gather all test results in a friendly to use format
-  local ctest_results = {}
-  for _, testcase in pairs(testcases) do
-    ctest_results[testcase._attr.name] = {
-      status = testcase._attr.status,
-      message = testcase["system-out"],
-    }
-  end
+  local testsuite = context.ctest:parse_test_results()
 
   local discovered_tests = {}
   for _, node in tree:iter() do
@@ -122,24 +95,20 @@ function adapter.results(spec, result, tree)
     end
   end
 
-  -- TODO: file/dir/namespace are marked as passed when all tests are skipped
-  -- Not sure if this is the intended behavior of Neotest, or if I'm doing something wrong.
-
   for _, test in pairs(discovered_tests) do
-    local candidate = ctest_results[test.name]
+    local testcase = testsuite[test.name]
 
-    if not candidate then
-      -- NOTE: Not known to CTest
+    if not testcase then
+      logger.warn(string.format("Unknown CTest testcase '%s' (marked as skipped)", test.name))
       results[test.id] = { status = "skipped" }
     else
-      if candidate.status == "run" then
+      if testcase.status == "run" then
         results[test.id] = { status = "passed" }
-      elseif candidate.status == "fail" then
-        local short = vim.trim(string.match(candidate.message, "%[%s+RUN%s+%](.-)%[%s+FAILED%s+%]"))
-        local linenr, reason = spec.context.framework.parse_error_message(short)
-
+      elseif testcase.status == "fail" then
+        local short = testcase.error.message
+        local linenr, reason = context.framework.parse_error_message(short)
         local output = nio.fn.tempname()
-        lib.files.write(output, candidate.message)
+        lib.files.write(output, testcase.output)
 
         results[test.id] = {
           status = "failed",
