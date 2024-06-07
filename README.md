@@ -40,7 +40,7 @@ This adapter has been inspired by
 
 - [GoogleTest](https://github.com/google/googletest): Supports macros `TEST`,
   `TEST_F` and `TEST_P`
-- [Catch2](https://github.com/catchorg/Catch2): Supports macro `TEST_CASE`
+- [Catch2](https://github.com/catchorg/Catch2): Supports macros `TEST_CASE`, `SCENARIO`
 
 ## Installation
 

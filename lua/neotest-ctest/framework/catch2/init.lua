@@ -7,18 +7,17 @@ catch2.query = [[
     @namespace.definition
   )
 
-  (expression_statement
+  ((expression_statement
     (call_expression
       function: (identifier) @test.kind
       arguments: (argument_list
-        . (string_literal (string_content)) @test.name
-        . (string_literal (string_content)) @test.group
-        .
+        (string_literal (string_content)) @test.name
+        @other
       )
     )
     !type
-    (#eq? @test.kind "TEST_CASE")
-  ) @test.definition
+    (#any-of? @test.kind "TEST_CASE" "SCENARIO")
+  ) @test.definition)
 ]]
 
 function catch2.parse_errors(output)
@@ -52,13 +51,20 @@ function catch2.build_position(file_path, source, captured_nodes)
 
   if match_type then
     ---@type string
+    local kind = vim.treesitter.get_node_text(captured_nodes[match_type .. ".kind"], source)
     local name = vim.treesitter.get_node_text(captured_nodes[match_type .. ".name"], source)
+    name = string.gsub(name, '"', "")
+
+    if kind == "SCENARIO" then
+      name = "Scenario: " .. name
+    end
+
     local definition = captured_nodes[match_type .. ".definition"]
 
     local position = {
       type = match_type,
       path = file_path,
-      name = string.gsub(name, '"', ""),
+      name = name,
       range = { definition:range() },
     }
 
