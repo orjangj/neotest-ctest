@@ -108,18 +108,15 @@ function ctest:parse_test_results()
     local status = testcase._attr.status
     local time = testcase._attr.time
     total_time = total_time + time
-    local output = testcase["system-out"]
-    local error = {}
 
-    if status == "fail" then
-      error.message = vim.trim(string.match(testcase["system-out"], "%[%s+RUN%s+%](.-)%[%s+FAILED%s+%]"))
-    end
+    -- XXX: CTest only populates the "system-out"
+    -- See: https://gitlab.kitware.com/cmake/cmake/-/issues/22478
+    local output = testcase["system-out"]
 
     results[name] = {
       status = status,
       time = time,
       output = output,
-      error = error,
     }
   end
 

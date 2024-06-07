@@ -6,6 +6,9 @@ local lib = require("neotest.lib")
 local adapter = { name = "neotest-ctest" }
 
 function adapter.root(dir)
+  -- TODO: Need to come up with better rules for reporting root. CMakeLists.txt
+  -- are usually contained in multiple sub-directories, and this can be problematic
+  -- if dir input is anything else than the project root.
   return lib.files.match_root_pattern("CMakeLists.txt")(dir)
 end
 
@@ -51,8 +54,10 @@ function adapter.build_spec(args)
     return
   end
 
-  local root = adapter.root(position.path) or vim.loop.cwd()
-  local ctest = require("neotest-ctest.ctest"):new(root)
+  -- XXX: Not sure if using cwd is the best approach, but most people are probably going to
+  -- open Neovim at project root.
+  local cwd = vim.loop.cwd()
+  local ctest = require("neotest-ctest.ctest"):new(cwd)
 
   -- Collect runnable tests (known to CTest)
   local testcases = ctest:testcases()
@@ -105,14 +110,13 @@ function adapter.results(spec, _, tree)
       if testcase.status == "run" then
         results[test.id] = { status = "passed" }
       elseif testcase.status == "fail" then
-        local short = testcase.error.message
-        local linenr, reason = context.framework.parse_error_message(short)
+        local linenr, reason = context.framework.parse_error_message(testcase.output)
         local output = nio.fn.tempname()
         lib.files.write(output, testcase.output)
 
         results[test.id] = {
           status = "failed",
-          short = short,
+          short = testcase.output,
           output = output,
           errors = {
             {

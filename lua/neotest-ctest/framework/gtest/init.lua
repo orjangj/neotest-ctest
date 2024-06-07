@@ -1,6 +1,5 @@
 local gtest = {}
 
-gtest.name = "GoogleTest"
 gtest.lang = "cpp"
 gtest.query = [[
   ((namespace_definition
@@ -22,9 +21,11 @@ gtest.query = [[
 ]]
 
 function gtest.parse_error_message(output)
+  local message = vim.trim(string.match(output, "%[%s+RUN%s+%](.-)%[%s+FAILED%s+%]"))
+
   local t = {}
 
-  for str in string.gmatch(output, "[^\r\n$]+") do
+  for str in string.gmatch(message, "[^\r\n$]+") do
     table.insert(t, vim.trim(str))
   end
 

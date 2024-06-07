@@ -7,31 +7,6 @@ M.supported_frameworks = {
   gtest = require("neotest-ctest.framework.gtest"),
 }
 
-local function make_include_query(name)
-  local filters = {}
-
-  local system_query = ([[
-    ;; query
-    (preproc_include
-      path: (system_lib_string) @system.include
-      (#any-of? @system.include "<%s.h>" "<%s/%s.h>")
-    )
-  ]]):format(name, name, name)
-
-  local local_query = ([[
-    ;; query
-    (preproc_include
-      path: (string_literal (string_content)) @local.include
-      (#any-of? @local.include "\"%s.h\"" "\"%s/%s.h\"")
-    )
-  ]]):format(name, name, name)
-
-  table.insert(filters, system_query)
-  table.insert(filters, local_query)
-
-  return table.concat(filters, "\n")
-end
-
 local function has_matches(query, content, lang)
   nio.scheduler()
 
@@ -59,7 +34,14 @@ M.detect = function(file_path)
   local content = lib.files.read(file_path)
 
   for name, framework in pairs(M.supported_frameworks) do
-    local query = make_include_query(name)
+    local query = ([[
+      ;; query
+      (preproc_include
+        path: (system_lib_string) @system.include
+        (#match? @system.include "^\\<%s/.*\\>$")
+      )
+    ]]):format(name)
+
     if has_matches(query, content, framework.lang) then
       return framework
     end
