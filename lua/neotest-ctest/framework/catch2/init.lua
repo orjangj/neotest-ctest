@@ -1,33 +1,34 @@
-local gtest = {}
+local catch2 = {}
 
-gtest.lang = "cpp"
-gtest.query = [[
+catch2.lang = "cpp"
+catch2.query = [[
   ((namespace_definition
     name: (namespace_identifier) @namespace.name)
     @namespace.definition
   )
-  (function_definition
-    declarator: (function_declarator
-      declarator: (identifier) @test.kind
-      parameters: (parameter_list
-        . (parameter_declaration type: (type_identifier) !declarator) @test.group
-        . (parameter_declaration type: (type_identifier) !declarator) @test.name
+
+  (expression_statement
+    (call_expression
+      function: (identifier) @test.kind
+      arguments: (argument_list
+        . (string_literal (string_content)) @test.name
+        . (string_literal (string_content)) @test.group
         .
       )
     )
     !type
-    (#any-of? @test.kind "TEST" "TEST_F" "TEST_P")
+    (#eq? @test.kind "TEST_CASE")
   ) @test.definition
 ]]
 
-function gtest.parse_errors(output)
-  local capture = vim.trim(string.match(output, "%[%s+RUN%s+%](.-)%[%s+FAILED%s+%]"))
+function catch2.parse_errors(output)
+  local capture = vim.trim(string.match(output, "%.%.%.+[\r\n](.-)%=%=%=+"))
 
   local errors = {}
 
   for failures in string.gmatch(capture .. "\n\n", "(.-)[\r\n][\r\n]") do
     local t = {}
-    for str in string.gmatch(failures .. "Failure", "(.-)Failure") do
+    for str in string.gmatch(failures .. "FAILED:", "(.-)FAILED:") do
       table.insert(t, vim.trim(str))
     end
 
@@ -40,7 +41,7 @@ function gtest.parse_errors(output)
   return errors
 end
 
-function gtest.build_position(file_path, source, captured_nodes)
+function catch2.build_position(file_path, source, captured_nodes)
   local match_type
   if captured_nodes["test.name"] then
     match_type = "test"
@@ -54,15 +55,10 @@ function gtest.build_position(file_path, source, captured_nodes)
     local name = vim.treesitter.get_node_text(captured_nodes[match_type .. ".name"], source)
     local definition = captured_nodes[match_type .. ".definition"]
 
-    if match_type == "test" then
-      local group = vim.treesitter.get_node_text(captured_nodes["test.group"], source)
-      name = group .. "." .. name
-    end
-
     local position = {
       type = match_type,
       path = file_path,
-      name = name,
+      name = string.gsub(name, '"', ""),
       range = { definition:range() },
     }
 
@@ -70,10 +66,10 @@ function gtest.build_position(file_path, source, captured_nodes)
   end
 end
 
-function gtest.parse_positions(path)
+function catch2.parse_positions(path)
   local lib = require("neotest.lib")
-  local opts = { build_position = "require('neotest-ctest.framework.gtest').build_position" }
-  return lib.treesitter.parse_positions(path, gtest.query, opts)
+  local opts = { build_position = "require('neotest-ctest.framework.catch2').build_position" }
+  return lib.treesitter.parse_positions(path, catch2.query, opts)
 end
 
-return gtest
+return catch2

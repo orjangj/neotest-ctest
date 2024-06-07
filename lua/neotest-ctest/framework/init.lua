@@ -5,6 +5,7 @@ local M = {}
 
 M.supported_frameworks = {
   gtest = require("neotest-ctest.framework.gtest"),
+  catch2 = require("neotest-ctest.framework.catch2")
 }
 
 local function has_matches(query, content, lang)

@@ -110,20 +110,20 @@ function adapter.results(spec, _, tree)
       if testcase.status == "run" then
         results[test.id] = { status = "passed" }
       elseif testcase.status == "fail" then
-        local linenr, reason = context.framework.parse_error_message(testcase.output)
+        local errors = context.framework.parse_errors(testcase.output)
         local output = nio.fn.tempname()
         lib.files.write(output, testcase.output)
+
+        -- NOTE: Neotest adds 1 for some reason.
+        for _, error in pairs(errors) do
+          error.line = error.line - 1
+        end
 
         results[test.id] = {
           status = "failed",
           short = testcase.output,
           output = output,
-          errors = {
-            {
-              line = linenr - 1, -- NOTE: Neotest adds 1 for some reason.
-              message = reason,
-            },
-          },
+          errors = errors,
         }
       else
         results[test.id] = { status = "skipped" }

@@ -1,34 +1,28 @@
 # neotest-ctest
 
 <!-- TODO:
+    - Short vs output in results? What's the difference? and intendended usage?
     - TOC in README
     - Document nice features: framework auto-detection, ctest test directory detection
-    - Document known issues (file/dir/namespace incorrectly marked as passed when all tests are skipped)
-    - Prettify ugly ctest result output
-    - File management (nio.fn.tempname() and cleanup -- keep history?)
+    - Cleanup test results before each test run (or keep x history) .. related to usage of nio.fn.tempname()
     - Error handling
     - Document functions
     - Support user configuration
-      - extra-args: --verbose --schedule-random --timeout <time>
+      - extra-args (i.e. --verbose --schedule-random --timeout <time> )
       - is_test_file
       - filter_dir
       - framework selection, ordering, priority (set desired framework, or order/priority in detection algo)
-    - Semantic versioning and changelog
+    - Semantic versioning, changelog and CI
     - Contribution guide
     - Style guide  (stylua)
     - neoconf
     - Unit tests
 
-  -- TODO: file/dir/namespace are marked as passed when all tests are skipped
+  -- BUG: file/dir/namespace are marked as passed when all tests are skipped
   -- Not sure if this is the intended behavior of Neotest, or if I'm doing something wrong.
 
 -- Limitations
--- No colored output: https://gitlab.kitware.com/cmake/cmake/-/issues/17620
--- JUnit compatibility: https://gitlab.kitware.com/cmake/cmake/-/issues/22478
--- Parametrized tests working? I.e. TEST_P in GTest (how to display in neotest UI?)
--- Auto-detection of test directory will select the first found
-
-
+-- TODO: Parametrized tests working? I.e. TEST_P in GTest (how to display in neotest UI?)
 -->
 
 > Still Work-in-progress, but the docs illustrates the roadmap for this plugin.
@@ -39,12 +33,14 @@
 runner.
 
 This adapter has been inspired by
-[neotest-gtest](https://github.com/alfaix/neotest-gtest), [neotest-haskell](https://github.com/mrcjkb/neotest-haskell)
+[neotest-gtest](https://github.com/alfaix/neotest-gtest),
+[neotest-haskell](https://github.com/mrcjkb/neotest-haskell)
 
 ## Supported Test Frameworks
 
-- [GoogleTest](https://github.com/google/googletest): Supports macros `TEST`, `TEST_F`
-  and `TEST_P`
+- [GoogleTest](https://github.com/google/googletest): Supports macros `TEST`,
+  `TEST_F` and `TEST_P`
+- [Catch2](https://github.com/catchorg/Catch2): Supports macro `TEST_CASE`
 
 ## Installation
 
@@ -80,10 +76,15 @@ require("neotest").setup({
 
 ## Limitations
 
+- CMake/CTest out-of-source builds not supported. CTestTestfile.cmake is
+  expected to be on a path accessible from project root. I.e.
+  `build/CTestTestfile.cmake` or `build/<config>/CTestTestfile.cmake` (where
+  `<config>` could be something like a `Debug` configuration or similar).
 - Does not compile the source and tests.
   [cmake-tools](https://github.com/Civitasv/cmake-tools.nvim) is highly
   recommended as a companion plugin to manage compilation of tests.
-- Attempts to auto-detect the CTest test directory. For Multi-config
-  projects, it will select the first CTest enabled configuration found.
+- Attempts to auto-detect the CTest test directory. For Multi-config projects,
+  it will select the first CTest enabled configuration found.
+- No colored output (see https://gitlab.kitware.com/cmake/cmake/-/issues/17620)
 - Does not support the debugging feature of neotest + nvim-dap (yet)
 - Not configurable (yet)
