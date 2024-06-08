@@ -93,41 +93,69 @@ function adapter.results(spec, _, tree)
 
   local testsuite = context.ctest:parse_test_results()
 
-  local discovered_tests = {}
   for _, node in tree:iter() do
-    if node.type == "test" then
-      table.insert(discovered_tests, node)
-    end
-  end
+    if node.type == "file" or node.type == "namespace" then
+      local summary = testsuite.summary
+      local status
 
-  for _, test in pairs(discovered_tests) do
-    local testcase = testsuite[test.name]
-
-    if not testcase then
-      logger.warn(string.format("Unknown CTest testcase '%s' (marked as skipped)", test.name))
-      results[test.id] = { status = "skipped" }
-    else
-      if testcase.status == "run" then
-        results[test.id] = { status = "passed" }
-      elseif testcase.status == "fail" then
-        local errors = context.framework.parse_errors(testcase.output)
-        local output = nio.fn.tempname()
-        lib.files.write(output, testcase.output)
-
-        -- NOTE: Neotest adds 1 for some reason.
-        for _, error in pairs(errors) do
-          error.line = error.line - 1
-        end
-
-        results[test.id] = {
-          status = "failed",
-          short = testcase.output,
-          output = output,
-          errors = errors,
-        }
+      if summary.failures > 0 then
+        status = "failed"
+      elseif summary.skipped == summary.tests then
+        status = "skipped"
       else
-        results[test.id] = { status = "skipped" }
+        status = "passed"
       end
+
+      local short = {
+        "---------- CTest Summary ----------",
+        ("Total test time: %.6f seconds"):format(summary.time),
+        ("Test cases: %d"):format(summary.tests),
+        ("    Passed: %d"):format(summary.tests - summary.failures - summary.skipped),
+        ("    Failed: %d"):format(summary.failures),
+        ("   Skipped: %d"):format(summary.skipped),
+        "-----------------------------------",
+      }
+
+      results[node.id] = {
+        status = status,
+        short = table.concat(short, "\n"),
+        output = summary.output,
+      }
+    elseif node.type == "namespace" then
+      results[node.id] = { output = testsuite.summary.output }
+    elseif node.type == "test" then
+      local testcase = testsuite[node.name]
+
+      if not testcase then
+        logger.warn(string.format("Unknown CTest testcase '%s' (marked as skipped)", node.name))
+        results[node.id] = { status = "skipped" }
+      else
+        if testcase.status == "run" then
+          results[node.id] = {
+            status = "passed",
+            short = ("Passed in %.6f seconds"):format(testcase.time),
+            output = testsuite.summary.output
+          }
+        elseif testcase.status == "fail" then
+          local errors = context.framework.parse_errors(testcase.output)
+
+          -- NOTE: Neotest adds 1 for some reason.
+          for _, error in pairs(errors) do
+            error.line = error.line - 1
+          end
+
+          results[node.id] = {
+            status = "failed",
+            short = testcase.output,
+            output = testsuite.summary.output,
+            errors = errors,
+          }
+        else
+          results[node.id] = { status = "skipped" }
+        end
+      end
+    else
+      logger.error(("Unknown node type '%s'"):format(node.type))
     end
   end
 

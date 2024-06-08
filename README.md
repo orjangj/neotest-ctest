@@ -4,7 +4,6 @@
     - Short vs output in results? What's the difference? and intendended usage?
     - TOC in README
     - Document nice features: framework auto-detection, ctest test directory detection
-    - Cleanup test results before each test run (or keep x history) .. related to usage of nio.fn.tempname()
     - Error handling
     - Document functions
     - Support user configuration
@@ -17,8 +16,10 @@
     - Style guide  (stylua)
     - neoconf
     - Unit tests
+    - Document minimum versions of Neotest, GTest, Catch2... etc
+    - Document usefule keybindings (short output, full output, test nearest, test file, test all)
 
-  -- BUG: file/dir/namespace are marked as passed when all tests are skipped
+  -- BUG: dir nodes are marked as passed in neotest summary when all tests are skipped
   -- Not sure if this is the intended behavior of Neotest, or if I'm doing something wrong.
 
 -- Limitations

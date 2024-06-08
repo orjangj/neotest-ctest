@@ -45,11 +45,13 @@ function ctest:new(cwd)
     error("CTest version 3.21+ is required!")
   end
 
-  local results_path = nio.fn.tempname()
+  local output_junit_path = nio.fn.tempname()
+  local output_log_path = nio.fn.tempname()
 
   local session = {
     _test_dir = test_dir,
-    _results_path = results_path,
+    _output_junit_path = output_junit_path,
+    _output_log_path = output_log_path,
   }
   setmetatable(session, self)
   self.__index = self
@@ -65,7 +67,9 @@ function ctest:command(args)
     "--quiet",
     "--output-on-failure",
     "--output-junit",
-    self._results_path,
+    self._output_junit_path,
+    "--output-log",
+    self._output_log_path,
     table.concat(args, " "),
   }
 
@@ -92,8 +96,8 @@ function ctest:testcases()
 end
 
 function ctest:parse_test_results()
-  local content = lib.files.read(self._results_path) -- TODO: error handling
-  local junit = lib.xml.parse(content)
+  local junit_data = lib.files.read(self._output_junit_path) -- TODO: error handling
+  local junit = lib.xml.parse(junit_data)
   local testsuite = junit.testsuite
   local testcases = tonumber(testsuite._attr.tests) < 2 and { testsuite.testcase } or testsuite.testcase
 
@@ -106,7 +110,7 @@ function ctest:parse_test_results()
   for _, testcase in pairs(testcases) do
     local name = testcase._attr.name
     local status = testcase._attr.status
-    local time = testcase._attr.time
+    local time = tonumber(testcase._attr.time)
     total_time = total_time + time
 
     -- XXX: CTest only populates the "system-out"
@@ -121,10 +125,11 @@ function ctest:parse_test_results()
   end
 
   results.summary = {
-    tests = testsuite._attr.tests,
-    failures = testsuite._attr.failures,
-    skipped = testsuite._attr.skipped,
+    tests = tonumber(testsuite._attr.tests),
+    failures = tonumber(testsuite._attr.failures),
+    skipped = tonumber(testsuite._attr.skipped),
     time = total_time,
+    output = self._output_log_path
   }
 
   return results
