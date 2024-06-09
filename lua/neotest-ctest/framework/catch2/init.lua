@@ -13,10 +13,11 @@ catch2.query = [[
   (
     (expression_statement
       (call_expression
-        function: (identifier) @test.kind (#any-of? @test.kind "TEST_CASE" "SCENARIO")
+        function: (identifier) @test.kind (#any-of? @test.kind "TEST_CASE" "TEST_CASE_METHOD" "SCENARIO")
         arguments: (argument_list
-          . (string_literal (string_content)) @test.name
-          . (string_literal (string_content)) ? @test.tag
+          . (identifier) ? @test.fixture
+          . (string_literal (string_content) @test.name )
+          . (string_literal (string_content) @test.tag ) ?
           .
         )
       )
@@ -39,8 +40,12 @@ function catch2.parse_errors(output)
 
     local linenr = tonumber(vim.split(t[1], ":")[2])
     local reason = t[2]
+    local error = { line = linenr, message = reason }
 
-    table.insert(errors, { line = linenr, message = reason })
+    -- parse_errors is imperfect if GENERATE() macro has been used in the catch test
+    if not vim.tbl_isempty(error) then
+      table.insert(errors, error)
+    end
   end
 
   return errors
@@ -58,8 +63,8 @@ function catch2.build_position(file_path, source, captured_nodes)
   if match_type then
     ---@type string
     local kind = vim.treesitter.get_node_text(captured_nodes[match_type .. ".kind"], source)
+    ---@type string
     local name = vim.treesitter.get_node_text(captured_nodes[match_type .. ".name"], source)
-    name = string.gsub(name, '"', "")
 
     if kind == "SCENARIO" then
       name = "Scenario: " .. name
