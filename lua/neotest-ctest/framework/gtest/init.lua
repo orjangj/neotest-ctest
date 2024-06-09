@@ -2,22 +2,21 @@ local gtest = {}
 
 gtest.lang = "cpp"
 gtest.query = [[
+  ;; query 
   ((namespace_definition
-    name: (namespace_identifier) @namespace.name)
-    @namespace.definition
-  )
-  (function_definition
+    name: (namespace_identifier) @namespace.name
+  )) @namespace.definition
+  ;; query
+  ((function_definition
     declarator: (function_declarator
-      declarator: (identifier) @test.kind
+      declarator: (identifier) @test.kind (#any-of? @test.kind "TEST" "TEST_F")
       parameters: (parameter_list
-        . (parameter_declaration type: (type_identifier) !declarator) @test.group
+        . (parameter_declaration type: (type_identifier) !declarator) @test.suite
         . (parameter_declaration type: (type_identifier) !declarator) @test.name
         .
       )
     )
-    !type
-    (#any-of? @test.kind "TEST" "TEST_F" "TEST_P")
-  ) @test.definition
+  )) @test.definition
 ]]
 
 function gtest.parse_errors(output)
@@ -32,7 +31,7 @@ function gtest.parse_errors(output)
     end
 
     local linenr = tonumber(vim.split(t[1], ":")[2])
-    local reason = t[2] --string.gsub(t[2], "[\r\n%s]+", " ")  -- TODO: strip if using virtual text?
+    local reason = t[2]
 
     table.insert(errors, { line = linenr, message = reason })
   end
@@ -55,8 +54,8 @@ function gtest.build_position(file_path, source, captured_nodes)
     local definition = captured_nodes[match_type .. ".definition"]
 
     if match_type == "test" then
-      local group = vim.treesitter.get_node_text(captured_nodes["test.group"], source)
-      name = group .. "." .. name
+      local suite = vim.treesitter.get_node_text(captured_nodes["test.suite"], source)
+      name = suite .. "." .. name
     end
 
     local position = {

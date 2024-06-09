@@ -2,23 +2,29 @@ local catch2 = {}
 
 catch2.lang = "cpp"
 catch2.query = [[
+  ;; query
   ((namespace_definition
-    name: (namespace_identifier) @namespace.name)
-    @namespace.definition
-  )
-
-  ((expression_statement
-    (call_expression
-      function: (identifier) @test.kind
-      arguments: (argument_list
-        (string_literal (string_content)) @test.name
-        @other
+    name: (namespace_identifier) @namespace.name
+  )) @namespace.definition
+  ;; query
+  ;; NOTE: There seem to be some limitation with either treesitter or the cpp treesitter parser
+  ;; to capture range of sibling nodes. See catch2.build_position for workaround using
+  ;; @test.statement and @test.body to construct @test.definition
+  (
+    (expression_statement
+      (call_expression
+        function: (identifier) @test.kind (#any-of? @test.kind "TEST_CASE" "SCENARIO")
+        arguments: (argument_list
+          . (string_literal (string_content)) @test.name
+          . (string_literal (string_content)) ? @test.tag
+          .
+        )
       )
-    )
-    !type
-    (#any-of? @test.kind "TEST_CASE" "SCENARIO")
-  ) @test.definition)
+    ) @test.statement
+    . (compound_statement) @test.body
+  ) 
 ]]
+
 
 function catch2.parse_errors(output)
   local capture = vim.trim(string.match(output, "%.%.%.+[\r\n](.-)%=%=%=+"))
@@ -32,7 +38,7 @@ function catch2.parse_errors(output)
     end
 
     local linenr = tonumber(vim.split(t[1], ":")[2])
-    local reason = t[2] --string.gsub(t[2], "[\r\n%s]+", " ")  -- TODO: strip if using virtual text?
+    local reason = t[2]
 
     table.insert(errors, { line = linenr, message = reason })
   end
@@ -59,13 +65,16 @@ function catch2.build_position(file_path, source, captured_nodes)
       name = "Scenario: " .. name
     end
 
-    local definition = captured_nodes[match_type .. ".definition"]
+    -- NOTE: Construct test definition from captured sibling nodes
+    local statement = { captured_nodes[match_type .. ".statement"]:range() }
+    local body = { captured_nodes[match_type .. ".body"]:range() }
+    local definition = { statement[1], statement[2], body[3], body[4] }
 
     local position = {
       type = match_type,
       path = file_path,
       name = name,
-      range = { definition:range() },
+      range = definition,
     }
 
     return position
