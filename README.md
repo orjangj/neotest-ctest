@@ -27,8 +27,8 @@ adapter for C/C++ using
 runner.
 
 While CTest does not directly depend on the usage of CMake, this plugin assumes
-you have enumerated your tests with CMake integrations of the supported
-test frameworks (`gtest_discover_tests()`, `catch_discover_tests()`, etc.)
+you have enumerated your tests with CMake integrations of the supported test
+frameworks (`gtest_discover_tests()`, `catch_discover_tests()`, etc.)
 
 - [Supported Test Frameworks](#frameworks)
 - [Features](#features)
@@ -37,13 +37,12 @@ test frameworks (`gtest_discover_tests()`, `catch_discover_tests()`, etc.)
 - [Configuration](#configuration)
 - [Usage](#usage)
 
-
 ## Supported Test Frameworks
 
 - [GoogleTest](https://github.com/google/googletest): Supports macros `TEST` and
   `TEST_F`
-- [Catch2](https://github.com/catchorg/Catch2): Supports macros `TEST_CASE`, `TEST_CASE_METHOD`,
-  `SCENARIO`
+- [Catch2](https://github.com/catchorg/Catch2): Supports macros `TEST_CASE`,
+  `TEST_CASE_METHOD`, `SCENARIO`
 
 ## Features
 
@@ -55,16 +54,16 @@ test frameworks (`gtest_discover_tests()`, `catch_discover_tests()`, etc.)
 
 ## Limitations
 
-- CMake/CTest out-of-source builds not supported. CTestTestfile.cmake is
-  expected to be on a path accessible from project root. I.e.
-  `build/CTestTestfile.cmake` or `build/<config>/CTestTestfile.cmake` (where
-  `<config>` could be something like a `Debug` configuration or similar).
 - Does not compile the source and tests.
   [cmake-tools](https://github.com/Civitasv/cmake-tools.nvim) is highly
   recommended as a companion plugin to manage compilation of tests.
-- Attempts to auto-detect the CTest test directory. For Multi-config projects,
-  it will select the first CTest enabled configuration found.
-- No colored output (see https://gitlab.kitware.com/cmake/cmake/-/issues/17620)
+- `CTestTestfile.cmake` is expected to be on path from project root (max two
+  levels deep)
+  - For instance `build/CTestTestfile.cmake` or
+    `build/<config>/CTestTestfile.cmake`.
+  - For Multi-config projects it will select the first CTest enabled
+    configuration found.
+- No colored output: https://gitlab.kitware.com/cmake/cmake/-/issues/17620
 - Does not support the debugging feature of neotest + nvim-dap (yet)
 - Not configurable (yet)
 
@@ -113,7 +112,9 @@ The following example is based on
 ```
 
 ## Configuration
+
 TODO
+
 ## Usage
 
 _NOTE_: all usages of `require('neotest').run.run` can be mapped to a command in
