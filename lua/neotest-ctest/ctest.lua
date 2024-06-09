@@ -86,7 +86,7 @@ function ctest:testcases()
     local decoded = vim.json.decode(output)
 
     for index, test in ipairs(decoded.tests) do
-      testcases[test.name] = index -- TODO: Why was it implemented like this?
+      testcases[test.name] = index
     end
   else
     -- TODO: log error?
@@ -96,7 +96,7 @@ function ctest:testcases()
 end
 
 function ctest:parse_test_results()
-  local junit_data = lib.files.read(self._output_junit_path) -- TODO: error handling
+  local junit_data = lib.files.read(self._output_junit_path)
   local junit = lib.xml.parse(junit_data)
   local testsuite = junit.testsuite
   local testcases = tonumber(testsuite._attr.tests) < 2 and { testsuite.testcase } or testsuite.testcase
