@@ -45,6 +45,9 @@
   - [doctest](https://github.com/doctest/doctest) (v2.4.8+): Supports macros
     `TEST_CASE`, `TEST_CASE_FIXTURE`, `SCENARIO`
     - Decorators not supported yet
+  - [cpputest](https://github.com/cpputest/cpputest) (from commit `f2016778dbf385b99d676f3f46e1153427112be1` and onwards): Supports macros
+    `TEST`
+    - Configure the CMake build with `set(CPPUTEST_TESTS_DETAILED ON)` to properly enumerate the tests.
 - Automatically detects test framework used in a test file (see
   [limitations](#limitations))
   - Using multiple test frameworks is supported as each test file is evaluated
@@ -164,7 +167,7 @@ require("neotest-ctest").setup({
   -- Priority can be configured by ordering/removing list items to your needs.
   -- By default, each test file will be queried with the given frameworks in the
   -- following order.
-  frameworks = { "gtest", "catch2", "doctest"},
+  frameworks = { "gtest", "catch2", "doctest", "cpputest"},
   -- What extra args should ALWAYS be sent to CTest? Note that most of CTest arguments
   -- are not expected to be used (or work) with this plugin, but some might be useful
   -- depending on your needs. For instance:
