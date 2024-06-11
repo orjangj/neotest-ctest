@@ -1,34 +1,24 @@
+local config = require("neotest-ctest.config")
 local logger = require("neotest.logging")
-local nio = require("nio")
-local lib = require("neotest.lib")
 
 ---@type neotest.Adapter
 local adapter = { name = "neotest-ctest" }
 
-function adapter.root(dir)
-  -- TODO: Need to come up with better rules for reporting root. CMakeLists.txt
-  -- are usually contained in multiple sub-directories, and this can be problematic
-  -- if dir input is anything else than the project root.
-  return lib.files.match_root_pattern("CMakeLists.txt")(dir)
+adapter.setup = function(user_config)
+  config.setup(user_config)
+  return adapter
 end
 
-function adapter.filter_dir(name, _, _)
-  local dir_filters = {
-    ["build"] = false,
-    ["out"] = false,
-    ["venv"] = false,
-  }
+function adapter.root(dir)
+  return config.root(dir)
+end
 
-  return dir_filters[name] == nil
+function adapter.filter_dir(name, rel_path, root)
+  return config.filter_dir(name, rel_path, root)
 end
 
 function adapter.is_test_file(file_path)
-  local elems = vim.split(file_path, lib.files.sep, { plain = true })
-  local name, extension = unpack(vim.split(elems[#elems], ".", { plain = true }))
-
-  local supported_extensions = { "cpp", "cc", "cxx" }
-
-  return vim.tbl_contains(supported_extensions, extension) and vim.endswith(name, "_test") or false
+  return config.is_test_file(file_path)
 end
 
 function adapter.discover_positions(path)
@@ -54,10 +44,9 @@ function adapter.build_spec(args)
     return
   end
 
-  -- XXX: Not sure if using cwd is the best approach, but most people are probably going to
-  -- open Neovim at project root.
   local cwd = vim.loop.cwd()
-  local ctest = require("neotest-ctest.ctest"):new(cwd)
+  local root = adapter.root(cwd) or cwd
+  local ctest = require("neotest-ctest.ctest"):new(root)
 
   -- Collect runnable tests (known to CTest)
   local testcases = ctest:testcases()
@@ -75,7 +64,11 @@ function adapter.build_spec(args)
   -- If Start, End and Stride are set to 0, then CTest will run all test# as specified.
   local filter = string.format("-I 0,0,0,%s", table.concat(runnable_tests, ","))
 
-  local command = ctest:command({ filter })
+  local extra_args = config.extra_args or {}
+  vim.list_extend(extra_args, args.extra_args or {})
+  local ctest_args = { filter, table.concat(extra_args, " ") }
+
+  local command = ctest:command(ctest_args)
   local framework = require("neotest-ctest.framework").detect(position.path)
 
   return {
@@ -134,7 +127,7 @@ function adapter.results(spec, _, tree)
           results[node.id] = {
             status = "passed",
             short = ("Passed in %.6f seconds"):format(testcase.time),
-            output = testsuite.summary.output
+            output = testsuite.summary.output,
           }
         elseif testcase.status == "fail" then
           local errors = context.framework.parse_errors(testcase.output)

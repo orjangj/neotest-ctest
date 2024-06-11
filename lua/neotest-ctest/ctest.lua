@@ -129,7 +129,7 @@ function ctest:parse_test_results()
     failures = tonumber(testsuite._attr.failures),
     skipped = tonumber(testsuite._attr.skipped),
     time = total_time,
-    output = self._output_log_path
+    output = self._output_log_path,
   }
 
   return results

@@ -2,7 +2,7 @@ local gtest = {}
 
 gtest.lang = "cpp"
 gtest.query = [[
-  ;; query 
+  ;; query
   ((namespace_definition
     name: (namespace_identifier) @namespace.name
   )) @namespace.definition

@@ -23,9 +23,8 @@ catch2.query = [[
       )
     ) @test.statement
     . (compound_statement) @test.body
-  ) 
+  )
 ]]
-
 
 function catch2.parse_errors(output)
   local capture = vim.trim(string.match(output, "%.%.%.+[\r\n](.-)%=%=%=+"))

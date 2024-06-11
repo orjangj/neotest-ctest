@@ -1,12 +1,8 @@
+local config = require("neotest-ctest.config")
 local lib = require("neotest.lib")
 local nio = require("nio")
 
 local M = {}
-
-M.supported_frameworks = {
-  gtest = require("neotest-ctest.framework.gtest"),
-  catch2 = require("neotest-ctest.framework.catch2")
-}
 
 local function has_matches(query, content, lang)
   nio.scheduler()
@@ -31,10 +27,9 @@ local function has_matches(query, content, lang)
 end
 
 M.detect = function(file_path)
-  -- TODO: throttle?
   local content = lib.files.read(file_path)
 
-  for name, framework in pairs(M.supported_frameworks) do
+  for _, name in pairs(config.frameworks) do
     local query = ([[
       ;; query
       (preproc_include
@@ -42,6 +37,8 @@ M.detect = function(file_path)
         (#match? @system.include "^\\<%s/.*\\>$")
       )
     ]]):format(name)
+
+    local framework = require("neotest-ctest.framework." .. name)
 
     if has_matches(query, content, framework.lang) then
       return framework
