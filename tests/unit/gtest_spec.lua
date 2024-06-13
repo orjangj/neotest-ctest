@@ -2,16 +2,18 @@ local assert = require("luassert")
 local gtest = require("neotest-ctest.framework.gtest")
 local it = require("nio").tests.it
 
-describe("neotest-ctest.framework.gtest.parse_positions", function()
+-- TODO: Mock lib.files.read()?
+
+describe("gtest.parse_positions", function()
   it("discovers TEST macro", function()
-    local test_file = vim.loop.cwd() .. "/tests/unit/data/gtest/gtest_test.cpp"
+    local test_file = vim.loop.cwd() .. "/tests/unit/data/gtest/TEST_test.cpp"
     local actual_positions = gtest.parse_positions(test_file):to_list()
     local expected_positions = {
       {
         id = test_file,
-        name = "gtest_test.cpp",
+        name = "TEST_test.cpp",
         path = test_file,
-        range = { 0, 0, 25, 0 },
+        range = { 0, 0, 12, 0 },
         type = "file",
       },
       {
@@ -34,8 +36,57 @@ describe("neotest-ctest.framework.gtest.parse_positions", function()
         {
           {
             id = ("%s::%s::%s"):format(test_file, "TEST", "Suite.Second"),
-            name = "Suite.Second", path = test_file,
+            name = "Suite.Second",
+            path = test_file,
             range = { 6, 0, 9, 1 },
+            type = "test",
+          },
+        },
+      },
+    }
+
+    -- NOTE: assert.are.same() crops the output when table is too deep.
+    -- Splitting the assertions for increased readability in case of failure.
+    assert.are.same(expected_positions[1], actual_positions[1])
+    assert.are.same(expected_positions[2][1], actual_positions[2][1])
+    assert.are.same(expected_positions[2][2][1], actual_positions[2][2][1])
+    assert.are.same(expected_positions[2][3][1], actual_positions[2][3][1])
+  end)
+
+  it("discovers TEST_F macro", function()
+    local test_file = vim.loop.cwd() .. "/tests/unit/data/gtest/TEST_F_test.cpp"
+    local actual_positions = gtest.parse_positions(test_file):to_list()
+    local expected_positions = {
+      {
+        id = test_file,
+        name = "TEST_F_test.cpp",
+        path = test_file,
+        range = { 0, 0, 14, 0 },
+        type = "file",
+      },
+      {
+        {
+          id = ("%s::%s"):format(test_file, "TEST_F"),
+          name = "TEST_F",
+          path = test_file,
+          range = { 2, 0, 13, 1 },
+          type = "namespace",
+        },
+        {
+          {
+            id = ("%s::%s::%s"):format(test_file, "TEST_F", "Fixture.First"),
+            name = "Fixture.First",
+            path = test_file,
+            range = { 6, 0, 6, 45 },
+            type = "test",
+          },
+        },
+        {
+          {
+            id = ("%s::%s::%s"):format(test_file, "TEST_F", "Fixture.Second"),
+            name = "Fixture.Second",
+            path = test_file,
+            range = { 8, 0, 11, 1 },
             type = "test",
           },
         },
@@ -51,41 +102,23 @@ describe("neotest-ctest.framework.gtest.parse_positions", function()
   end)
 end)
 
-describe("neotest-ctest.framework.gtest.parse_errors", function ()
-
-  local blob = [[
-Running main() from /path/to/gtest_main.cc
-Note: Google Test filter = Suite.Second
-[==========] Running 1 test from 1 test suite.
-[----------] Global test environment set-up.
-[----------] 1 test from Suite
+describe("gtest.parse_errors", function()
+  it("parses gtest >= v1.14.0 diagnostics correctly", function()
+    -- NOTE: Partial GTest output (only the relevant portions are included
+    local output = [[
 [ RUN      ] Suite.Second
-%s
+/path/to/TEST_test.cpp:8: Failure
+Value of: false
+  Actual: false
+Expected: true
+
+/path/to/TEST_test.cpp:9: Failure
+Value of: false
+  Actual: false
+Expected: true
+
 [  FAILED  ] Suite.Second (0 ms)
-[----------] 1 test from Suite (0 ms total)
-
-[----------] Global test environment tear-down
-[==========] 1 test from 1 test suite ran. (0 ms total)
-[  PASSED  ] 0 tests.
-[  FAILED  ] 1 test, listed below:
-[  FAILED  ] Suite.Second
-
- 1 FAILED TEST
-  ]]
-
-  it("parses gtest >= v1.14.0 diagnostics correctly", function ()
-    local output = blob:format([[
-/path/to/gtest_test.cpp:8: Failure
-Value of: false
-  Actual: false
-Expected: true
-
-/path/to/gtest_test.cpp:9: Failure
-Value of: false
-  Actual: false
-Expected: true
-
-    ]])
+]]
 
     local actual_errors = gtest.parse_errors(output)
     local expected_errors = {
@@ -102,8 +135,10 @@ Expected: true
     assert.are.same(expected_errors, actual_errors)
   end)
 
-  it("parses gtest < v1.14.0 diagnostics correctly", function ()
-    local output = blob:format([[
+  it("parses gtest < v1.14.0 diagnostics correctly", function()
+    -- NOTE: Partial GTest output (only the relevant portions are included
+    local output = [[
+[ RUN      ] Suite.Second
 /path/to/gtest_test.cpp:8: Failure
 Value of: false
   Actual: false
@@ -112,7 +147,8 @@ Expected: true
 Value of: false
   Actual: false
 Expected: true
-    ]])
+[  FAILED  ] Suite.Second (0 ms)
+]]
 
     local actual_errors = gtest.parse_errors(output)
     local expected_errors = {
