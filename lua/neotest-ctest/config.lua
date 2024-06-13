@@ -69,7 +69,17 @@ local module_metatable = {
 setmetatable(M, module_metatable)
 
 function M.setup(user_config)
+  user_config = user_config or {}
   config = vim.tbl_deep_extend("force", default_config, user_config)
+end
+
+-- for tests
+function M.get()
+  return config
+end
+
+function M.get_default()
+  return default_config
 end
 
 return M
