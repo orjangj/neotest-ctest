@@ -139,11 +139,11 @@ Expected: true
     -- NOTE: Partial GTest output (only the relevant portions are included
     local output = [[
 [ RUN      ] Suite.Second
-/path/to/gtest_test.cpp:8: Failure
+/path/to/TEST_test.cpp:8: Failure
 Value of: false
   Actual: false
 Expected: true
-/path/to/gtest_test.cpp:9: Failure
+/path/to/TEST_test.cpp:9: Failure
 Value of: false
   Actual: false
 Expected: true
