@@ -11,17 +11,25 @@ describe("catch2.parse_positions", function()
         id = test_file,
         name = "TEST_CASE_test.cpp",
         path = test_file,
-        range = { 0, 0, 8, 0 },
+        range = { 0, 0, 12, 0 },
         type = "file",
       },
       {
         {
-
-          id = ("%s::%s"):format(test_file, "First"),
-          name = "First",
+          id = ("%s::%s"):format(test_file, "TEST_CASE"),
+          name = "TEST_CASE",
           path = test_file,
-          range = { 2, 0, 2, 48 },
-          type = "test",
+          range = { 2, 0, 6, 1 },
+          type = "namespace",
+        },
+        {
+          {
+            id = ("%s::%s::%s"):format(test_file, "TEST_CASE", "First"),
+            name = "First",
+            path = test_file,
+            range = { 4, 0, 4, 48 },
+            type = "test",
+          },
         },
       },
       {
@@ -29,7 +37,7 @@ describe("catch2.parse_positions", function()
           id = ("%s::%s"):format(test_file, "Second"),
           name = "Second",
           path = test_file,
-          range = { 4, 0, 7, 1 },
+          range = { 8, 0, 11, 1 },
           type = "test",
         },
       },
@@ -39,6 +47,7 @@ describe("catch2.parse_positions", function()
     -- Splitting the assertions for increased readability in case of failure.
     assert.are.same(expected_positions[1], actual_positions[1])
     assert.are.same(expected_positions[2][1], actual_positions[2][1])
+    assert.are.same(expected_positions[2][2][1], actual_positions[2][2][1])
     assert.are.same(expected_positions[3][1], actual_positions[3][1])
   end)
 
@@ -91,7 +100,7 @@ describe("catch2.parse_positions", function()
       },
       {
         {
-          id = ("%s::%s"):format(test_file,  "Scenario: First"),
+          id = ("%s::%s"):format(test_file, "Scenario: First"),
           name = "Scenario: First",
           path = test_file,
           range = { 2, 0, 12, 1 },

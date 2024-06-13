@@ -6,10 +6,28 @@ catch2.query = [[
   ((namespace_definition
     name: (namespace_identifier) @namespace.name
   )) @namespace.definition
-  ;; query
+  ;; query (tests within namespace)
   ;; NOTE: There seem to be some limitation with either treesitter or the cpp treesitter parser
   ;; to capture range of sibling nodes. See catch2.build_position for workaround using
   ;; @test.statement and @test.body to construct @test.definition
+  ((namespace_definition
+    name: (namespace_identifier)
+
+    body: (declaration_list
+      (expression_statement
+        (call_expression
+          function: (identifier) @test.kind (#any-of? @test.kind "TEST_CASE" "TEST_CASE_METHOD" "SCENARIO")
+          arguments: (argument_list
+            . (identifier) ? @test.fixture
+            . (string_literal (string_content) @test.name )
+            . (string_literal (string_content) @test.tag ) ?
+            .
+          )
+        )
+      ) @test.statement
+      . (compound_statement) @test.body)
+  ))
+  ;; query (tests without namespace)
   (
     (expression_statement
       (call_expression
@@ -51,38 +69,37 @@ function catch2.parse_errors(output)
 end
 
 function catch2.build_position(file_path, source, captured_nodes)
-  local match_type
-  if captured_nodes["test.name"] then
-    match_type = "test"
-  end
-  if captured_nodes["namespace.name"] then
-    match_type = "namespace"
-  end
+  local position = nil
 
-  if match_type then
-    ---@type string
-    local kind = vim.treesitter.get_node_text(captured_nodes[match_type .. ".kind"], source)
-    ---@type string
-    local name = vim.treesitter.get_node_text(captured_nodes[match_type .. ".name"], source)
+  if captured_nodes["namespace.name"] then
+    position = {
+      type = "namespace",
+      path = file_path,
+      name = vim.treesitter.get_node_text(captured_nodes["namespace.name"], source),
+      range = { captured_nodes["namespace.definition"]:range() },
+    }
+  elseif captured_nodes["test.name"] then
+    local name = vim.treesitter.get_node_text(captured_nodes["test.name"], source)
+    local kind = vim.treesitter.get_node_text(captured_nodes["test.kind"], source)
 
     if kind == "SCENARIO" then
       name = "Scenario: " .. name
     end
 
     -- NOTE: Construct test definition from captured sibling nodes
-    local statement = { captured_nodes[match_type .. ".statement"]:range() }
-    local body = { captured_nodes[match_type .. ".body"]:range() }
+    local statement = { captured_nodes["test.statement"]:range() }
+    local body = { captured_nodes["test.body"]:range() }
     local definition = { statement[1], statement[2], body[3], body[4] }
 
-    local position = {
-      type = match_type,
+    position = {
+      type = "test",
       path = file_path,
       name = name,
       range = definition,
     }
-
-    return position
   end
+
+  return position
 end
 
 function catch2.parse_positions(path)
