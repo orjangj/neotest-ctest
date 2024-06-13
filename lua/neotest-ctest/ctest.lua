@@ -3,10 +3,10 @@ local nio = require("nio")
 
 local ctest = {}
 
-local function run(test_dir, args)
+function ctest:run(args)
   local runner = nio.process.run({
     cmd = "ctest",
-    cwd = test_dir,
+    cwd = self._test_dir,
     args = args,
   })
 
@@ -34,7 +34,7 @@ function ctest:new(cwd)
     error("Failed to locate CTest test directory")
   end
 
-  local version = run(test_dir, { "--version" })
+  local version = self:run({ "--version" })
 
   if not version then
     error("Failed to determine CTest version")
@@ -42,7 +42,7 @@ function ctest:new(cwd)
 
   local major, minor, _ = string.match(version, "(%d+)%.(%d+)%.(%d+)")
   if not (tonumber(major) >= 3 and tonumber(minor) >= 21) then
-    error("CTest version 3.21+ is required!")
+    error("CTest version 3.21+ is required")
   end
 
   local output_junit_path = nio.fn.tempname()
@@ -79,7 +79,7 @@ end
 function ctest:testcases()
   local testcases = {}
 
-  local output = run(self._test_dir, { "--show-only=json-v1" })
+  local output = self:run({ "--show-only=json-v1" })
 
   if output then
     output = string.gsub(output, "[\n\r]", "")
