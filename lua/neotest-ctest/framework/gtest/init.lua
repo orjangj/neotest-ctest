@@ -20,20 +20,28 @@ gtest.query = [[
 ]]
 
 function gtest.parse_errors(output)
-  local capture = vim.trim(string.match(output, "%[%s+RUN%s+%](.-)%[%s+FAILED%s+%]"))
+  local capture = vim.trim(string.match(output, "%[%s+RUN%s+%].-[\r\n](.-)%[%s+FAILED%s+%]"))
 
+  -- NOTE: This is a very hacky solution to transform gtest <v1.14.0 to a v.14.0+ formatted error message output
+  local tmp = ""
+  for str in string.gmatch(capture, "[^\r\n$]+") do
+    local line = string.match(str, ".-:(%d):%sFailure")
+    if line then
+      tmp = tmp .. "\n\n" .. str
+    else
+      tmp = tmp .. "\n" .. str
+    end
+  end
+
+  capture = vim.trim(tmp)
+
+  -- NOTE: At this point, the capture should be compatible with gtest v1.14.0+ (which is considerably easier to parse)
   local errors = {}
 
   for failures in string.gmatch(capture .. "\n\n", "(.-)[\r\n][\r\n]") do
-    local t = {}
-    for str in string.gmatch(failures .. "Failure", "(.-)Failure") do
-      table.insert(t, vim.trim(str))
+    for line, message in string.gmatch(failures, ".-:(%d):%sFailure[\r\n](.+)") do
+      table.insert(errors, { line = tonumber(line), message = message })
     end
-
-    local linenr = tonumber(vim.split(t[1], ":")[2])
-    local reason = t[2]
-
-    table.insert(errors, { line = linenr, message = reason })
   end
 
   return errors
