@@ -25,7 +25,7 @@ function gtest.parse_errors(output)
   -- NOTE: This is a very hacky solution to transform gtest <v1.14.0 to a v.14.0+ formatted error message output
   local tmp = ""
   for str in string.gmatch(capture, "[^\r\n$]+") do
-    local line = string.match(str, ".-:(%d):%sFailure")
+    local line = string.match(str, ".-:(%d+):%sFailure")
     if line then
       tmp = tmp .. "\n\n" .. str
     else
@@ -39,7 +39,7 @@ function gtest.parse_errors(output)
   local errors = {}
 
   for failures in string.gmatch(capture .. "\n\n", "(.-)[\r\n][\r\n]") do
-    for line, message in string.gmatch(failures, ".-:(%d):%sFailure[\r\n](.+)") do
+    for line, message in string.gmatch(failures, ".-:(%d+):%sFailure[\r\n](.+)") do
       table.insert(errors, { line = tonumber(line), message = message })
     end
   end
