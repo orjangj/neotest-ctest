@@ -104,7 +104,7 @@ end)
 
 describe("gtest.parse_errors", function()
   it("parses gtest >= v1.14.0 diagnostics correctly", function()
-    -- NOTE: Partial GTest output (only the relevant portions are included
+    -- NOTE: Partial GTest output (only the relevant portions are included)
     local output = [[
 [ RUN      ] Suite.Second
 /path/to/TEST_test.cpp:8: Failure
@@ -136,7 +136,7 @@ Expected: true
   end)
 
   it("parses gtest < v1.14.0 diagnostics correctly", function()
-    -- NOTE: Partial GTest output (only the relevant portions are included
+    -- NOTE: Partial GTest output (only the relevant portions are included)
     local output = [[
 [ RUN      ] Suite.Second
 /path/to/TEST_test.cpp:8: Failure
