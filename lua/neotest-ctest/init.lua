@@ -80,79 +80,67 @@ function adapter.build_spec(args)
   }
 end
 
-function adapter.results(spec, _, tree)
+local function prepare_results(tree, testsuite, framework)
+  local node = tree:data()
   local results = {}
-  local context = spec.context
 
-  local testsuite = context.ctest:parse_test_results()
-
-  for _, node in tree:iter() do
-    if node.type == "file" or node.type == "namespace" then
-      local summary = testsuite.summary
-      local status
-
-      if summary.failures > 0 then
-        status = "failed"
-      elseif summary.skipped == summary.tests then
-        status = "skipped"
-      else
-        status = "passed"
-      end
-
-      local short = {
-        "---------- CTest Summary ----------",
-        ("Total test time: %.6f seconds"):format(summary.time),
-        ("Test cases: %d"):format(summary.tests),
-        ("    Passed: %d"):format(summary.tests - summary.failures - summary.skipped),
-        ("    Failed: %d"):format(summary.failures),
-        ("   Skipped: %d"):format(summary.skipped),
-        "-----------------------------------",
-      }
-
-      results[node.id] = {
-        status = status,
-        short = table.concat(short, "\n"),
-        output = summary.output,
-      }
-    elseif node.type == "namespace" then
-      results[node.id] = { output = testsuite.summary.output }
-    elseif node.type == "test" then
-      local testcase = testsuite[node.name]
-
-      if not testcase then
-        logger.warn(string.format("Unknown CTest testcase '%s' (marked as skipped)", node.name))
-        results[node.id] = { status = "skipped" }
-      else
-        if testcase.status == "run" then
-          results[node.id] = {
-            status = "passed",
-            short = ("Passed in %.6f seconds"):format(testcase.time),
-            output = testsuite.summary.output,
-          }
-        elseif testcase.status == "fail" then
-          local errors = context.framework.parse_errors(testcase.output)
-
-          -- NOTE: Neotest adds 1 for some reason.
-          for _, error in pairs(errors) do
-            error.line = error.line - 1
-          end
-
-          results[node.id] = {
-            status = "failed",
-            short = testcase.output,
-            output = testsuite.summary.output,
-            errors = errors,
-          }
-        else
-          results[node.id] = { status = "skipped" }
+  if node.type == "file" or node.type == "namespace" then
+    local passed = 0
+    local failed = 0
+    for _, child in pairs(tree:children()) do
+      local r = prepare_results(child, testsuite, framework)
+      for n, v in pairs(r) do
+        results[n] = v
+        if v.status == "passed" then
+          passed = passed + 1
+        elseif v.status == "failed" then
+          failed = failed + 1
         end
       end
+    end
+
+    local status = failed > 0 and "failed" or passed > 0 and "passed" or "skipped"
+    results[node.id] = { status = status, output = testsuite.summary.output }
+  elseif node.type == "test" then
+    local testcase = testsuite[node.name]
+
+    if not testcase then
+      logger.warn(string.format("Unknown CTest testcase '%s' (marked as skipped)", node.name))
+      results[node.id] = { status = "skipped" }
     else
-      logger.error(("Unknown node type '%s'"):format(node.type))
+      if testcase.status == "run" then
+        results[node.id] = {
+          status = "passed",
+          short = ("Passed in %.6f seconds"):format(testcase.time),
+          output = testsuite.summary.output,
+        }
+      elseif testcase.status == "fail" then
+        local errors = framework.parse_errors(testcase.output)
+
+        -- NOTE: Neotest adds 1 for some reason.
+        for _, error in pairs(errors) do
+          error.line = error.line - 1
+        end
+
+        results[node.id] = {
+          status = "failed",
+          short = testcase.output,
+          output = testsuite.summary.output,
+          errors = errors,
+        }
+      else
+        results[node.id] = { status = "skipped" }
+      end
     end
   end
 
   return results
+end
+
+function adapter.results(spec, _, tree)
+  local context = spec.context
+  local testsuite = context.ctest:parse_test_results()
+  return prepare_results(tree, testsuite, context.framework)
 end
 
 return adapter
