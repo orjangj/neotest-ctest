@@ -30,6 +30,7 @@
 
 [![MIT License][license-shield]][license-url]
 [![Issues][issues-shield]][issues-url]
+[![Build Status][ci-shield]][ci-url]
 
 </div>
 
@@ -275,5 +276,7 @@ The following example of keybindings can be used as a starting point:
 [issues-url]: https://github.com/orjangj/neotest-ctest/issues
 [license-shield]: https://img.shields.io/github/license/orjangj/neotest-ctest.svg?style=for-the-badge
 [license-url]: https://github.com/orjangj/neotest-ctest/blob/master/LICENSE
+[ci-shield]: https://img.shields.io/github/actions/workflow/status/orjangj/neotest-ctest/workflow.yml?style=for-the-badge
+[ci-url]: https://github.com/orjangj/neotest-ctest/actions/workflows/workflow.yml
 
 <!-- prettier-ignore-end -->
