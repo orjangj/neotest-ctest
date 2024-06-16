@@ -1,16 +1,3 @@
-<!-- TODO:
-    - Unit tests
-    - Semantic versioning, changelog, CI (CI badges)
-    - README: images to show-case the plugin
-    - dap integration
-    - Document functions
-    - Error handling
-    - Contribution guide
-    - Style guide  (stylua)
-    - neoconf
-    - luarocks
-    - neovim healthceck integration?
--->
 <!-- prettier-ignore-start -->
 
 <div align="center">
@@ -19,7 +6,7 @@
     <strong>
       A <a href="https://github.com/nvim-neotest/neotest">neotest</a> adapter for C/C++
       using <a href="https://cmake.org/cmake/help/latest/manual/ctest.1.html">CTest</a>
-      as a test runner.
+      as a test runner
     </strong>
   </p>
 
