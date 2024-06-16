@@ -42,7 +42,11 @@
       for more.
   - [Catch2](https://github.com/catchorg/Catch2) (v3.3.0+): Supports macros
     `TEST_CASE`, `TEST_CASE_METHOD`, `SCENARIO`
-- Automatically detects test framework used in a test file
+  - [doctest](https://github.com/doctest/doctest) (v2.4.8+): Supports macros
+    `TEST_CASE`, `TEST_CASE_FIXTURE`, `SCENARIO`
+    - Decorators not supported yet
+- Automatically detects test framework used in a test file (see
+  [limitations](#limitations))
   - Using multiple test frameworks is supported as each test file is evaluated
     separately
   - What frameworks to include in the detection is configurable
@@ -67,6 +71,13 @@
     `<dir>/<config>/CTestTestfile.cmake`.
   - For multi-config projects, the first CTest enabled configuration found will
     be selected.
+- Currently, framework tests are only detected if the system lib include pattern
+  is used, such as `#include <gtest/gtest.h>` as opposed to
+  `#include "gtest/gtest.h"`.
+- Some of the frameworks, such as `catch2` and `doctest`, enumerates test case
+  names interchangeably. This makes it impossible for neotest-ctest to reliably
+  map them to neotest positions. Please ensure that test case names are uniquely
+  defined if you use multiple frameworks together!
 - Does not support neotest's `dap` strategy for debugging tests (yet)
 
 ## Requirements
@@ -156,7 +167,7 @@ require("neotest-ctest").setup({
   -- Priority can be configured by ordering/removing list items to your needs.
   -- By default, each test file will be queried with the given frameworks in the
   -- following order.
-  frameworks = { "gtest", "catch2" },
+  frameworks = { "gtest", "catch2", "doctest"},
   -- What extra args should ALWAYS be sent to CTest? Note that most of CTest arguments
   -- are not expected to be used (or work) with this plugin, but some might be useful
   -- depending on your needs. For instance:
