@@ -5,8 +5,6 @@ local it = require("nio").tests.it
 
 adapter.setup({})
 
--- TODO: remove the summary stuff
-
 describe("position.type == test", function()
   local spec, test_file, positions, tree
 
