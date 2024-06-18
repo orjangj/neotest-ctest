@@ -1,15 +1,15 @@
 local logger = require("neotest.logging")
-local catch2 = {}
+local doctest = {}
 
-catch2.lang = "cpp"
-catch2.query = [[
+doctest.lang = "cpp"
+doctest.query = [[
   ;; query
   ((namespace_definition
     name: (namespace_identifier) @namespace.name
   )) @namespace.definition
   ;; query (tests within namespace)
   ;; NOTE: There seem to be some limitation with either treesitter or the cpp treesitter parser
-  ;; to capture range of sibling nodes. See catch2.build_position for workaround using
+  ;; to capture range of sibling nodes. See doctest.build_position for workaround using
   ;; @test.statement and @test.body to construct @test.definition
   ((namespace_definition
     name: (namespace_identifier)
@@ -17,11 +17,10 @@ catch2.query = [[
     body: (declaration_list
       (expression_statement
         (call_expression
-          function: (identifier) @test.kind (#any-of? @test.kind "TEST_CASE" "TEST_CASE_METHOD" "SCENARIO")
+          function: (identifier) @test.kind (#any-of? @test.kind "TEST_CASE" "TEST_CASE_FIXTURE" "SCENARIO")
           arguments: (argument_list
             . (identifier) ? @test.fixture
             . (string_literal (string_content) @test.name )
-            . (string_literal (string_content) @test.tag ) ?
             .
           )
         )
@@ -32,11 +31,10 @@ catch2.query = [[
   (
     (expression_statement
       (call_expression
-        function: (identifier) @test.kind (#any-of? @test.kind "TEST_CASE" "TEST_CASE_METHOD" "SCENARIO")
+        function: (identifier) @test.kind (#any-of? @test.kind "TEST_CASE" "TEST_CASE_FIXTURE" "SCENARIO")
         arguments: (argument_list
           . (identifier) ? @test.fixture
           . (string_literal (string_content) @test.name )
-          . (string_literal (string_content) @test.tag ) ?
           .
         )
       )
@@ -45,18 +43,21 @@ catch2.query = [[
   )
 ]]
 
-function catch2.parse_errors(output)
-  local capture = string.match(output, "%.%.%.+[\r\n](.-)%=%=%=+")
+function doctest.parse_errors(output)
+  local capture = string.match(output, "%=%=%=+[\r\n](.-)%=%=%=+")
 
   if not capture then
-    logger.error("Failed to capture catch2 errors")
+    logger.error("Failed to capture doctest errors")
     return {}
   end
+
+  -- NOTE: Makes it easier to parse since lua doesn't support alternation pattern
+  capture = capture:gsub("FATAL ERROR", "ERROR")
 
   local errors = {}
 
   for failures in string.gmatch(capture .. "\n\n", "(.-)[\r\n][\r\n]") do
-    for line, message in string.gmatch(failures, ".-:(%d+):%sFAILED%:[\r\n](.+)") do
+    for line, message in string.gmatch(failures, ".-:(%d+):%sERROR%:[%s]?(.+)") do
       table.insert(errors, { line = tonumber(line), message = message })
     end
   end
@@ -64,7 +65,7 @@ function catch2.parse_errors(output)
   return errors
 end
 
-function catch2.build_position(file_path, source, captured_nodes)
+function doctest.build_position(file_path, source, captured_nodes)
   local position = nil
 
   if captured_nodes["namespace.name"] then
@@ -79,7 +80,10 @@ function catch2.build_position(file_path, source, captured_nodes)
     local kind = vim.treesitter.get_node_text(captured_nodes["test.kind"], source)
 
     if kind == "SCENARIO" then
-      name = "Scenario: " .. name
+      -- XXX: Not sure why doctest prefixes with "  Scenario:" instead of "Scenario:"
+      --      See: https://github.com/doctest/doctest/blob/master/doctest/doctest.h#L2921
+      --      and: https://github.com/doctest/doctest/blob/master/doc/markdown/testcases.md#bdd-style-test-cases
+      name = "  Scenario: " .. name
     end
 
     -- NOTE: Construct test definition from captured sibling nodes
@@ -98,10 +102,10 @@ function catch2.build_position(file_path, source, captured_nodes)
   return position
 end
 
-function catch2.parse_positions(path)
+function doctest.parse_positions(path)
   local lib = require("neotest.lib")
-  local opts = { build_position = "require('neotest-ctest.framework.catch2').build_position" }
-  return lib.treesitter.parse_positions(path, catch2.query, opts)
+  local opts = { build_position = "require('neotest-ctest.framework.doctest').build_position" }
+  return lib.treesitter.parse_positions(path, doctest.query, opts)
 end
 
-return catch2
+return doctest
