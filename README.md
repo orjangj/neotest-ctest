@@ -35,7 +35,11 @@
 
 - Supported Test Frameworks
   - [GoogleTest](https://github.com/google/googletest) (v1.11.0+): Supports
-    macros `TEST` and `TEST_F`
+    macros `TEST`, `TEST_F` and `TEST_P`
+    - For `TEST_P`, only `Range`, `Values` and `Bool` parameter generators are
+      supported. The name generator is not supported either. See
+      [INSTANTIATE_TEST_SUITE_P](https://google.github.io/googletest/reference/testing.html#INSTANTIATE_TEST_SUITE_P)
+      for more.
   - [Catch2](https://github.com/catchorg/Catch2) (v3.3.0+): Supports macros
     `TEST_CASE`, `TEST_CASE_METHOD`, `SCENARIO`
 - Automatically detects test framework used in a test file

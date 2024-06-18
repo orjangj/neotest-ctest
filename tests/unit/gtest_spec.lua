@@ -100,6 +100,98 @@ describe("gtest.parse_positions", function()
     assert.are.same(expected_positions[2][2][1], actual_positions[2][2][1])
     assert.are.same(expected_positions[2][3][1], actual_positions[2][3][1])
   end)
+
+  it("discovers TEST_P macro", function()
+    local test_file = vim.loop.cwd() .. "/tests/unit/data/gtest/TEST_P_test.cpp"
+    local actual_positions = gtest.parse_positions(test_file):to_list()
+    local expected_positions = {
+      {
+        id = test_file,
+        name = "TEST_P_test.cpp",
+        path = test_file,
+        range = { 0, 0, 14, 0 },
+        type = "file",
+      },
+      {
+        {
+          id = ("%s::%s"):format(test_file, "ParameterizedBool.Test"),
+          name = "ParameterizedBool.Test",
+          path = test_file,
+          range = { 4, 0, 4, 64 },
+          type = "namespace",
+        },
+        {
+          {
+            id = ("%s::%s::%s"):format(test_file, "ParameterizedBool.Test", "P1/ParameterizedBool.Test/false"),
+            name = "P1/ParameterizedBool.Test/false",
+            path = test_file,
+            type = "test",
+          },
+        },
+        {
+          {
+            id = ("%s::%s::%s"):format(test_file, "ParameterizedBool.Test", "P1/ParameterizedBool.Test/true"),
+            name = "P1/ParameterizedBool.Test/true",
+            path = test_file,
+            type = "test",
+          },
+        },
+      },
+      {
+        {
+          id = ("%s::%s"):format(test_file, "ParameterizedInt.Test"),
+          name = "ParameterizedInt.Test",
+          path = test_file,
+          range = { 10, 0, 10, 60 },
+          type = "namespace",
+        },
+        {
+          {
+            id = ("%s::%s::%s"):format(test_file, "ParameterizedInt.Test", "P1/ParameterizedInt.Test/0"),
+            name = "P1/ParameterizedInt.Test/0",
+            path = test_file,
+            type = "test",
+          },
+        },
+        {
+          {
+            id = ("%s::%s::%s"):format(test_file, "ParameterizedInt.Test", "P1/ParameterizedInt.Test/1"),
+            name = "P1/ParameterizedInt.Test/1",
+            path = test_file,
+            type = "test",
+          },
+        },
+        {
+          {
+            id = ("%s::%s::%s"):format(test_file, "ParameterizedInt.Test", "P1/ParameterizedInt.Test/2"),
+            name = "P1/ParameterizedInt.Test/2",
+            path = test_file,
+            type = "test",
+          },
+        },
+        {
+          {
+            id = ("%s::%s::%s"):format(test_file, "ParameterizedInt.Test", "P1/ParameterizedInt.Test/3"),
+            name = "P1/ParameterizedInt.Test/3",
+            path = test_file,
+            type = "test",
+          },
+        },
+      },
+    }
+
+    -- NOTE: assert.are.same() crops the output when table is too deep.
+    -- Splitting the assertions for increased readability in case of failure.
+    assert.are.same(expected_positions[1], actual_positions[1])
+    assert.are.same(expected_positions[2][1], actual_positions[2][1])
+    assert.are.same(expected_positions[2][2][1], actual_positions[2][2][1])
+    assert.are.same(expected_positions[2][3][1], actual_positions[2][3][1])
+    assert.are.same(expected_positions[3][1], actual_positions[3][1])
+    assert.are.same(expected_positions[3][2][1], actual_positions[3][2][1])
+    assert.are.same(expected_positions[3][3][1], actual_positions[3][3][1])
+    assert.are.same(expected_positions[3][4][1], actual_positions[3][4][1])
+    assert.are.same(expected_positions[3][5][1], actual_positions[3][5][1])
+  end)
 end)
 
 describe("gtest.parse_errors", function()
