@@ -1,13 +1,15 @@
 ---
-name: neotest-ctest CI
+name: Test
+
 on:
   push:
-    branches:
-      - master
-  pull_request: ~
+    branches: [master]
+  pull_request:
+    types: [opened, synchronize]
+  workflow_dispatch:
+
 jobs:
   tests:
-    name: tests
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
