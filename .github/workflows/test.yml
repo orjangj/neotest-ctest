@@ -11,37 +11,57 @@ on:
 jobs:
   tests:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04]
+        os: [ubuntu-22.04, macos-12, windows-2022]
         rev: [nightly, v0.9.1, v0.10.0]
         include:
           - os: ubuntu-22.04
-            rev: v0.9.1
-          - os: ubuntu-22.04
-            rev: v0.10.0
-          - os: ubuntu-22.04
-            rev: nightly
+            CONFIG_HOME: ~/.config/nvim
+            PLUGINS_HOME: ~/.local/share/nvim/lazy
+            LOGS_DIR: ~/.local/state
+          - os: macos-12
+            CONFIG_HOME: ~/.config/nvim
+            PLUGINS_HOME: ~/.local/share/nvim/lazy
+            LOGS_DIR: ~/.local/state
+          - os: windows-2022
+            CONFIG_HOME: $env:LOCALAPPDATA\nvim
+            PLUGINS_HOME: $env:LOCALAPPDATA\nvim-data\lazy
+            LOGS_DIR: $env:LOCALAPPDATA\nvim-data
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: ${{ matrix.rev }}
       - name: Prepare dependencies
         run: |
-          mkdir -p _neovim
-          curl -sL "https://github.com/neovim/neovim/releases/download/${{ matrix.rev }}/nvim-linux64.tar.gz" | tar xzf - --strip-components=1 -C "${PWD}/_neovim"
-          export PLUGINS_PATH=~/.local/share/nvim/site/pack/vendor/start
-          mkdir -p $PLUGINS_PATH
-          git clone --depth 1 https://github.com/nvim-lua/plenary.nvim ${PLUGINS_PATH}/plenary.nvim
-          git clone --depth 1 https://github.com/nvim-treesitter/nvim-treesitter ${PLUGINS_PATH}/nvim-treesitter
-          git clone --depth 1 https://github.com/nvim-neotest/nvim-nio ${PLUGINS_PATH}/nvim-nio
-          git clone --depth 1 https://github.com/nvim-neotest/neotest ${PLUGINS_PATH}/neotest
-          ln -s ${PLUGINS_PATH} ~/.local/share/nvim/lazy
-          export PATH="${PWD}/_neovim/bin:${PATH}"
-          export VIM="${PWD}/_neovim/share/nvim/runtime"
-          nvim --headless -c 'TSInstallSync lua cpp | quit'
-      - name: Run tests
-        run: |
-          export PATH="${PWD}/_neovim/bin:${PATH}"
-          export VIM="${PWD}/_neovim/share/nvim/runtime"
           nvim --version
-          nvim --headless -c "PlenaryBustedDirectory tests/unit {minimal_init='tests/unit/minimal_init.lua',timeout=5000}"
+          pip install cmake==3.21 ninja
+          mkdir -p ${{ matrix.PLUGINS_HOME }}
+          mkdir -p ${{ matrix.CONFIG_HOME }}
+          cp tests/unit/minimal_init.lua ${{ matrix.CONFIG_HOME }}/init.lua
+          git clone --depth 1 https://github.com/nvim-lua/plenary.nvim ${{ matrix.PLUGINS_HOME }}/plenary.nvim
+          git clone --depth 1 https://github.com/nvim-treesitter/nvim-treesitter ${{ matrix.PLUGINS_HOME }}/nvim-treesitter
+          git clone --depth 1 https://github.com/nvim-neotest/nvim-nio ${{ matrix.PLUGINS_HOME }}/nvim-nio
+          git clone --depth 1 https://github.com/nvim-neotest/neotest ${{ matrix.PLUGINS_HOME }}/neotest
+          nvim --headless -c "TSInstallSync lua cpp" -c q
+      # TODO: lib.treesitter.parse_positions builds the tree differently for Windows vs Unix.
+      - name: Run unit tests
+        if: runner.os == 'Linux'
+        run: |
+          make unit
+      - name: Run integration tests
+        run: |
+          make integration
+        env:
+          CMAKE_GENERATOR: Ninja
+      - name: Print error logs if failure
+        if: ${{ failure() }}
+        run: |
+          cat ${{ matrix.LOGS_DIR }}/neotest.log

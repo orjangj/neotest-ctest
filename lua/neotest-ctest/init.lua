@@ -45,7 +45,7 @@ function adapter.build_spec(args)
   end
 
   local cwd = vim.loop.cwd()
-  local root = adapter.root(cwd) or cwd
+  local root = adapter.root(position.path) or cwd
   local ctest = require("neotest-ctest.ctest"):new(root)
 
   -- Collect runnable tests (known to CTest)

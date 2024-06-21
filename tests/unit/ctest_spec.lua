@@ -7,11 +7,15 @@ describe("ctest:new", function()
   local cwd = "/path/to/project"
   local tempfile = "tempfile"
   local scandir = require("plenary.scandir")
+  local lib = require("neotest.lib")
   local fn = require("nio").fn
 
   it("should return valid object when successful", function()
     stub(scandir, "scan_dir", function(_, _)
       return { cwd .. "/CTestTestfiles.cmake" }
+    end)
+    stub(lib.files, "parent", function (_)
+      return cwd
     end)
     stub(ctest, "run", function(_)
       return "3.21.0"
@@ -21,9 +25,9 @@ describe("ctest:new", function()
     end)
 
     local ctest_object = ctest:new(cwd)
-    assert.equals(ctest_object._test_dir, cwd)
-    assert.equals(ctest_object._output_junit_path, tempfile)
-    assert.equals(ctest_object._output_log_path, tempfile)
+    assert.equals(cwd, ctest_object._test_dir)
+    assert.equals(tempfile, ctest_object._output_junit_path)
+    assert.equals(tempfile, ctest_object._output_log_path)
   end)
 
   it("should throw error if no test directory found", function()
