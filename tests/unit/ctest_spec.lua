@@ -14,7 +14,7 @@ describe("ctest:new", function()
     stub(scandir, "scan_dir", function(_, _)
       return { cwd .. "/CTestTestfiles.cmake" }
     end)
-    stub(lib.files, "parent", function (_)
+    stub(lib.files, "parent", function(_)
       return cwd
     end)
     stub(ctest, "run", function(_)

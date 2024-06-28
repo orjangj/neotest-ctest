@@ -91,7 +91,8 @@ function ctest:parse_test_results()
   local junit_data = lib.files.read(self._output_junit_path)
   local junit = lib.xml.parse(junit_data)
   local testsuite = junit.testsuite
-  local testcases = tonumber(testsuite._attr.tests) < 2 and { testsuite.testcase } or testsuite.testcase
+  local testcases = tonumber(testsuite._attr.tests) < 2 and { testsuite.testcase }
+    or testsuite.testcase
 
   local results = {}
 

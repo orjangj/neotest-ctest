@@ -107,8 +107,10 @@ function gtest.build_parameterized(source, parent)
     end
 
     local group = vim.treesitter.get_node_text(captured_nodes["parameterized.group"], source)
-    local param_generator = vim.treesitter.get_node_text(captured_nodes["parameterized.param_generator"], source)
-    local param_args = vim.treesitter.get_node_text(captured_nodes["parameterized.param_args"], source)
+    local param_generator =
+      vim.treesitter.get_node_text(captured_nodes["parameterized.param_generator"], source)
+    local param_args =
+      vim.treesitter.get_node_text(captured_nodes["parameterized.param_args"], source)
 
     -- TODO: support name_generator
     local prefix = group

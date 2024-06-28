@@ -18,7 +18,7 @@ describe("adapter.name", function()
   end)
 end)
 
-describe("adapter.is_test_file", function ()
+describe("adapter.is_test_file", function()
   it("should return true for default pattern", function()
     assert.is_true(adapter.is_test_file("/foo/bar_test.cc"))
     assert.is_true(adapter.is_test_file("/foo/bar_test.cpp"))
@@ -32,8 +32,7 @@ describe("adapter.is_test_file", function ()
   end)
 end)
 
-
-describe("adapter.filter_dir", function ()
+describe("adapter.filter_dir", function()
   it("should filter default directories", function()
     assert.is_false(adapter.filter_dir("build", "", ""))
     assert.is_false(adapter.filter_dir("cmake", "", ""))
@@ -51,4 +50,3 @@ describe("adapter.filter_dir", function ()
     assert.is_true(adapter.filter_dir("tests", "", ""))
   end)
 end)
-

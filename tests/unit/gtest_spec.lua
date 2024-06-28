@@ -122,7 +122,11 @@ describe("gtest.parse_positions", function()
         },
         {
           {
-            id = ("%s::%s::%s"):format(test_file, "ParameterizedBool.Test", "P1/ParameterizedBool.Test/false"),
+            id = ("%s::%s::%s"):format(
+              test_file,
+              "ParameterizedBool.Test",
+              "P1/ParameterizedBool.Test/false"
+            ),
             name = "P1/ParameterizedBool.Test/false",
             path = test_file,
             type = "test",
@@ -130,7 +134,11 @@ describe("gtest.parse_positions", function()
         },
         {
           {
-            id = ("%s::%s::%s"):format(test_file, "ParameterizedBool.Test", "P1/ParameterizedBool.Test/true"),
+            id = ("%s::%s::%s"):format(
+              test_file,
+              "ParameterizedBool.Test",
+              "P1/ParameterizedBool.Test/true"
+            ),
             name = "P1/ParameterizedBool.Test/true",
             path = test_file,
             type = "test",
@@ -147,7 +155,11 @@ describe("gtest.parse_positions", function()
         },
         {
           {
-            id = ("%s::%s::%s"):format(test_file, "ParameterizedInt.Test", "P1/ParameterizedInt.Test/0"),
+            id = ("%s::%s::%s"):format(
+              test_file,
+              "ParameterizedInt.Test",
+              "P1/ParameterizedInt.Test/0"
+            ),
             name = "P1/ParameterizedInt.Test/0",
             path = test_file,
             type = "test",
@@ -155,7 +167,11 @@ describe("gtest.parse_positions", function()
         },
         {
           {
-            id = ("%s::%s::%s"):format(test_file, "ParameterizedInt.Test", "P1/ParameterizedInt.Test/1"),
+            id = ("%s::%s::%s"):format(
+              test_file,
+              "ParameterizedInt.Test",
+              "P1/ParameterizedInt.Test/1"
+            ),
             name = "P1/ParameterizedInt.Test/1",
             path = test_file,
             type = "test",
@@ -163,7 +179,11 @@ describe("gtest.parse_positions", function()
         },
         {
           {
-            id = ("%s::%s::%s"):format(test_file, "ParameterizedInt.Test", "P1/ParameterizedInt.Test/2"),
+            id = ("%s::%s::%s"):format(
+              test_file,
+              "ParameterizedInt.Test",
+              "P1/ParameterizedInt.Test/2"
+            ),
             name = "P1/ParameterizedInt.Test/2",
             path = test_file,
             type = "test",
@@ -171,7 +191,11 @@ describe("gtest.parse_positions", function()
         },
         {
           {
-            id = ("%s::%s::%s"):format(test_file, "ParameterizedInt.Test", "P1/ParameterizedInt.Test/3"),
+            id = ("%s::%s::%s"):format(
+              test_file,
+              "ParameterizedInt.Test",
+              "P1/ParameterizedInt.Test/3"
+            ),
             name = "P1/ParameterizedInt.Test/3",
             path = test_file,
             type = "test",

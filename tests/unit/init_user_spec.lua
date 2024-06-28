@@ -3,7 +3,7 @@ local adapter = require("neotest-ctest")
 local config = require("neotest-ctest.config")
 
 local user_config = {
-  root = function (_)
+  root = function(_)
     return true
   end,
   is_test_file = function(_)
@@ -52,4 +52,3 @@ describe("adapter.filter_dir", function()
     assert.is_true(adapter.filter_dir("build", "", ""))
   end)
 end)
-
