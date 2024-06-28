@@ -4,20 +4,10 @@ local nio = require("nio")
 local ctest = {}
 
 function ctest:run(args)
-  local runner = nio.process.run({
-    cmd = "ctest",
-    cwd = self._test_dir,
-    args = args,
-  })
+  local cmd = { "ctest", "--test-dir", self._test_dir, unpack(args) }
+  local _, result = lib.process.run(cmd, { stdout = true, stderr = true })
 
-  if not runner then
-    return
-  end
-
-  local output = runner.stdout.read()
-  runner.close()
-
-  return output
+  return result.stdout
 end
 
 function ctest:new(cwd)
