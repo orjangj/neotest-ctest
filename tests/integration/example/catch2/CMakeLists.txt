@@ -1,9 +1,4 @@
-include(FetchContent)
-FetchContent_Declare(
-  catch
-  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG v3.6.0)
-FetchContent_MakeAvailable(catch)
+find_package(Catch2 REQUIRED)
 
 add_executable(catch2_TEST_CASE_test TEST_CASE_test.cpp)
 target_compile_features(catch2_TEST_CASE_test PRIVATE cxx_std_17)
