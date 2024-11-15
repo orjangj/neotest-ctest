@@ -54,10 +54,16 @@ function gtest.parse_errors(output)
 
   -- NOTE: At this point, the capture should be compatible with gtest v1.14.0+ (which is considerably easier to parse)
   local errors = {}
+  local matches = {
+    ".-:(%d+):%sFailure[\r\n](.+)", -- Unix matcher
+    ".-%((%d+)%):%serror:(.+)",     -- Windows matcher
+  }
 
-  for failures in string.gmatch(capture .. "\n\n", "(.-)[\r\n][\r\n]") do
-    for line, message in string.gmatch(failures, ".-:(%d+):%sFailure[\r\n](.+)") do
-      table.insert(errors, { line = tonumber(line), message = message })
+  for failures in string.gmatch(capture .. "\n\n", "(.-)\n\n") do
+    for _, match in ipairs(matches) do
+      for line, message in string.gmatch(failures, match) do
+        table.insert(errors, { line = tonumber(line), message = message })
+      end
     end
   end
 
