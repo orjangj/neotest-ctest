@@ -33,7 +33,8 @@ function ctest:new(cwd)
   end
 
   local major, minor, _ = string.match(version, "(%d+)%.(%d+)%.(%d+)")
-  if not (tonumber(major) >= 3 and tonumber(minor) >= 21) then
+  major, minor = tonumber(major), tonumber(minor)
+  if not ((major > 3) or (major >= 3 and minor >= 21)) then
     error("CTest version 3.21+ is required")
   end
 

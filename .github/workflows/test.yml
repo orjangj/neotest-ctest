@@ -4,8 +4,7 @@ name: Test
 on:
   push:
     branches: [master]
-  pull_request:
-    types: [opened, synchronize]
+  pull_request: ~
   workflow_dispatch:
 
 jobs:
@@ -16,14 +15,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, macos-12, windows-2022]
-        rev: [nightly, v0.9.1, v0.10.0]
+        os: [ubuntu-22.04, macos-15, windows-2022]
+        rev: [v0.10.0]
         include:
           - os: ubuntu-22.04
             CONFIG_HOME: ~/.config/nvim
             PLUGINS_HOME: ~/.local/share/nvim/lazy
             LOGS_DIR: ~/.local/state
-          - os: macos-12
+          - os: macos-15
             CONFIG_HOME: ~/.config/nvim
             PLUGINS_HOME: ~/.local/share/nvim/lazy
             LOGS_DIR: ~/.local/state
