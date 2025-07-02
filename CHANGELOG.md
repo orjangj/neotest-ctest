@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/orjangj/neotest-ctest/compare/v0.1.0...v0.1.1) (2025-07-02)
+
+
+### Bug Fixes
+
+* **ctest:** fix version check to support cmake v4 ([#41](https://github.com/orjangj/neotest-ctest/issues/41)) ([2861448](https://github.com/orjangj/neotest-ctest/commit/2861448978bf5d644a5d75da0235100e975ee905)), closes [#40](https://github.com/orjangj/neotest-ctest/issues/40)
+
 ## 0.1.0 (2024-06-28)
 
 
