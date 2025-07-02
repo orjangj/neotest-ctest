@@ -55,8 +55,9 @@ function catch2.parse_errors(output)
 
   local errors = {}
 
-  for failures in string.gmatch(capture .. "\n\n", "(.-)[\r\n][\r\n]") do
-    for line, message in string.gmatch(failures, ".-:(%d+):%sFAILED%:[\r\n](.+)") do
+  for failures in string.gmatch(capture .. "\n\n", "(.-)\n\n") do
+    print("failures" .. failures)
+    for line, message in string.gmatch(failures, ".-[:%(](%d+)%)-:%sFAILED:[\r\n]+(.+)") do
       table.insert(errors, { line = tonumber(line), message = message })
     end
   end
