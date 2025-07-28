@@ -2,7 +2,19 @@ local logger = require("neotest.logging")
 local catch2 = {}
 
 catch2.lang = "cpp"
-catch2.query = [[
+catch2.include_query = [[
+  ;; query
+  (preproc_include
+    path: (system_lib_string) @system.include
+    (#match? @system.include "^\\<catch2/.*\\>$")
+  )
+  ;; query
+  (preproc_include
+    path: (string_literal) @local.include
+    (#match? @local.include "^\"catch2/.*\"$")
+  )
+]]
+catch2.tests_query = [[
   ;; query
   ((namespace_definition
     name: (namespace_identifier) @namespace.name
@@ -101,7 +113,7 @@ end
 function catch2.parse_positions(path)
   local lib = require("neotest.lib")
   local opts = { build_position = "require('neotest-ctest.framework.catch2').build_position" }
-  return lib.treesitter.parse_positions(path, catch2.query, opts)
+  return lib.treesitter.parse_positions(path, catch2.tests_query, opts)
 end
 
 return catch2

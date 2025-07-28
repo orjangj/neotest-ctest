@@ -2,7 +2,19 @@ local logger = require("neotest.logging")
 local gtest = {}
 
 gtest.lang = "cpp"
-gtest.query = [[
+gtest.include_query = [[
+  ;; query
+  (preproc_include
+    path: (system_lib_string) @system.include
+    (#match? @system.include "^\\<(gtest/)?gtest\.h\\>$")
+  )
+  ;; query
+  (preproc_include
+    path: (string_literal) @local.include
+    (#match? @local.include "^\"(gtest/)?gtest\.h\"$")
+  )
+]]
+gtest.tests_query = [[
   ;; query
   ((namespace_definition
     name: (namespace_identifier) @namespace.name
@@ -213,7 +225,7 @@ end
 function gtest.parse_positions(path)
   local lib = require("neotest.lib")
   local opts = { build_position = "require('neotest-ctest.framework.gtest').build_position" }
-  return lib.treesitter.parse_positions(path, gtest.query, opts)
+  return lib.treesitter.parse_positions(path, gtest.tests_query, opts)
 end
 
 return gtest

@@ -71,9 +71,6 @@
     `<dir>/<config>/CTestTestfile.cmake`.
   - For multi-config projects, the first CTest enabled configuration found will
     be selected.
-- Currently, framework tests are only detected if the system lib include pattern
-  is used, such as `#include <gtest/gtest.h>` as opposed to
-  `#include "gtest/gtest.h"`.
 - Some of the frameworks, such as `catch2` and `doctest`, enumerates test case
   names interchangeably. This makes it impossible for neotest-ctest to reliably
   map them to neotest positions. Please ensure that test case names are uniquely
