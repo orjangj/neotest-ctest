@@ -34,50 +34,35 @@
 ## Features
 
 - Supported Test Frameworks
-  - [GoogleTest](https://github.com/google/googletest) (v1.11.0+): Supports
-    macros `TEST`, `TEST_F` and `TEST_P`
-    - For `TEST_P`, only `Range`, `Values` and `Bool` parameter generators are
-      supported. The name generator is not supported either. See
+  - [GoogleTest](https://github.com/google/googletest) (v1.11.0+): Supports macros `TEST`, `TEST_F` and `TEST_P`
+    - For `TEST_P`, only `Range`, `Values` and `Bool` parameter generators are supported. See
       [INSTANTIATE_TEST_SUITE_P](https://google.github.io/googletest/reference/testing.html#INSTANTIATE_TEST_SUITE_P)
       for more.
-  - [Catch2](https://github.com/catchorg/Catch2) (v3.3.0+): Supports macros
-    `TEST_CASE`, `TEST_CASE_METHOD`, `SCENARIO`
-  - [doctest](https://github.com/doctest/doctest) (v2.4.8+): Supports macros
-    `TEST_CASE`, `TEST_CASE_FIXTURE`, `SCENARIO`
+  - [Catch2](https://github.com/catchorg/Catch2) (v3.3.0+): Supports macros `TEST_CASE`, `TEST_CASE_METHOD`, `SCENARIO`
+  - [doctest](https://github.com/doctest/doctest) (v2.4.8+): Supports macros `TEST_CASE`, `TEST_CASE_FIXTURE`,
+    `SCENARIO`
     - Decorators not supported yet
-  - [cpputest](https://github.com/cpputest/cpputest) (from commit `f2016778dbf385b99d676f3f46e1153427112be1` and onwards): Supports macros
-    `TEST`
+  - [CppUTest](https://github.com/cpputest/cpputest) (from commit `f2016778dbf385b99d676f3f46e1153427112be1` and
+    onwards): Supports macros `TEST`
     - Configure the CMake build with `set(CPPUTEST_TESTS_DETAILED ON)` to properly enumerate the tests.
-- Automatically detects test framework used in a test file (see
-  [limitations](#limitations))
-  - Using multiple test frameworks is supported as each test file is evaluated
-    separately
-  - What frameworks to include in the detection is configurable
+- Automatically detects test framework used in a test file (see [limitations](#limitations))
 - Automatically detects CTest test directory (see [limitations](#limitations))
-- Parses test results and displays errors as diagnostics (if you have enabled
-  neotest's diagnostic option)
+- Parses test results and displays errors as diagnostics (if you have enabled neotest's diagnostic option)
 
-> _The framework versions listed above are the ones that have been tested, but
-> older versions may work as well._
+> _The framework versions listed above are the ones that have been tested, but older versions may work as well._
 
 ## Limitations
 
-- Does not compile any source or tests
-  ([cmake-tools](https://github.com/Civitasv/cmake-tools.nvim) is highly
+- Does not compile any source or tests ([cmake-tools](https://github.com/Civitasv/cmake-tools.nvim) is highly
   recommended as a companion plugin).
-- While CTest does not directly depend on the usage of CMake, this plugin
-  assumes you have enumerated your tests with CMake integrations such as
-  `gtest_discover_tests()`, `catch_discover_tests()`, etc.
-- `CTestTestfile.cmake` is expected to be on path from project root (max two
-  levels deep)
-  - For instance `<dir>/CTestTestfile.cmake` or
-    `<dir>/<config>/CTestTestfile.cmake`.
-  - For multi-config projects, the first CTest enabled configuration found will
-    be selected.
-- Some of the frameworks, such as `catch2` and `doctest`, enumerates test case
-  names interchangeably. This makes it impossible for neotest-ctest to reliably
-  map them to neotest positions. Please ensure that test case names are uniquely
-  defined if you use multiple frameworks together!
+- While CTest does not directly depend on the usage of CMake, this plugin assumes you have enumerated your tests with
+  CMake integrations such as `gtest_discover_tests()`, `catch_discover_tests()`, etc.
+- `CTestTestfile.cmake` is expected to be on path from project root (max two levels deep)
+  - For instance `<dir>/CTestTestfile.cmake` or `<dir>/<config>/CTestTestfile.cmake`.
+  - For multi-config projects, the first CTest enabled configuration found will be selected.
+- Some of the frameworks, such as `catch2` and `doctest`, enumerates test case names interchangeably. This makes it
+  impossible for `neotest-ctest` to reliably map them to neotest positions. Please ensure that test case names are
+  uniquely defined if you use multiple frameworks together!
 - Does not support neotest's `dap` strategy for debugging tests (yet)
 
 ## Requirements
@@ -89,11 +74,9 @@
 
 ## Installation
 
-See
-[Neotest Installation Instructions](https://github.com/nvim-neotest/neotest#installation).
+See [Neotest Installation Instructions](https://github.com/nvim-neotest/neotest#installation).
 
-The following example is based on
-[`lazy.nvim`](https://github.com/folke/lazy.nvim):
+The following example is based on [`lazy.nvim`](https://github.com/folke/lazy.nvim):
 
 ```lua
 {
@@ -183,8 +166,8 @@ require("neotest-ctest").setup({
 })
 ```
 
-It's possible to configure the adapter per project using Neotest's `projects`
-option if you need more fine-grained control:
+It's possible to configure the adapter per project using Neotest's `projects` option if you need more fine-grained
+control:
 
 ```lua
 require("neotest").setup({
@@ -212,9 +195,8 @@ require("neotest").setup({
 
 ## Usage
 
-See
-[Neotest Usage](https://github.com/nvim-neotest/neotest?tab=readme-ov-file#usage).
-The following example of keybindings can be used as a starting point:
+See [Neotest Usage](https://github.com/nvim-neotest/neotest?tab=readme-ov-file#usage). The following example of
+keybindings can be used as a starting point:
 
 ```lua
 {
