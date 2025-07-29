@@ -59,4 +59,17 @@ describe("framework.detect", function()
     actual = framework.detect(ignore_arg)
     assert.are.same(expected, actual)
   end)
+
+  it("should discover cpputest framework", function()
+    local expected = require("neotest-ctest.framework.cpputest")
+    local actual
+
+    lib.files.read.returns("#include <CppUTest/TestHarness.h>")
+    actual = framework.detect(ignore_arg)
+    assert.are.same(expected, actual)
+
+    lib.files.read.returns("#include \"CppUTest/TestHarness.h\"")
+    actual = framework.detect(ignore_arg)
+    assert.are.same(expected, actual)
+  end)
 end)

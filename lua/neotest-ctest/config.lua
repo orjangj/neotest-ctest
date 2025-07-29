@@ -48,7 +48,7 @@ local default_config = {
   root = default_root,
   is_test_file = default_is_test_file,
   filter_dir = default_filter_dir,
-  frameworks = { "gtest", "catch2", "doctest" },
+  frameworks = { "gtest", "catch2", "doctest", "cpputest" },
   extra_args = {},
 }
 
