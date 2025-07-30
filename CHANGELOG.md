@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.0](https://github.com/orjangj/neotest-ctest/compare/v0.1.1...v0.2.0) (2025-07-30)
+
+
+### Features
+
+* add support for cpputest framework ([#46](https://github.com/orjangj/neotest-ctest/issues/46)) ([d6775e8](https://github.com/orjangj/neotest-ctest/commit/d6775e8a46e75411e0b87d3b0432b92078a03437)), closes [#2](https://github.com/orjangj/neotest-ctest/issues/2)
+* detect multiple include pattern styles ([#44](https://github.com/orjangj/neotest-ctest/issues/44)) ([0558fd7](https://github.com/orjangj/neotest-ctest/commit/0558fd7804d5df87231598662e4691235c879c9f))
+
+
+### Performance Improvements
+
+* read test file only once during detection ([#48](https://github.com/orjangj/neotest-ctest/issues/48)) ([8fbc1e5](https://github.com/orjangj/neotest-ctest/commit/8fbc1e54e54456fbdf9f8ac535bc597589ae1499))
+
 ## [0.1.1](https://github.com/orjangj/neotest-ctest/compare/v0.1.0...v0.1.1) (2025-07-02)
 
 
