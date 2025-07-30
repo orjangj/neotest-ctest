@@ -27,12 +27,12 @@ local function has_matches(query, content, lang)
 end
 
 M.detect = function(file_path)
+  local content = lib.files.read(file_path)
+
   for _, name in pairs(config.frameworks) do
     local framework = require("neotest-ctest.framework." .. name)
-
     local query = framework.include_query
     local language = framework.lang
-    local content = lib.files.read(file_path)
 
     if has_matches(query, content, language) then
       return framework
