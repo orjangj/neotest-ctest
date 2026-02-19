@@ -5,7 +5,7 @@ local nio = require("nio")
 local ctest = {}
 
 function ctest:run(args)
-  local cmd = { config.cmd, "--test-dir", self._test_dir, unpack(args) }
+  local cmd = { unpack(config.cmd), "--test-dir", self._test_dir, unpack(args) }
   local _, result = lib.process.run(cmd, { stdout = true, stderr = true })
 
   return result.stdout
