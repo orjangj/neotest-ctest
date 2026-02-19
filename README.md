@@ -151,6 +151,9 @@ require("neotest-ctest").setup({
   -- By default, each test file will be queried with the given frameworks in the
   -- following order.
   frameworks = { "gtest", "catch2", "doctest", "cpputest"},
+  -- Command to run CTest. Can be used if the executable is not in your path or if you
+  -- are running it in a container.
+  cmd = { "ctest" },
   -- What extra args should ALWAYS be sent to CTest? Note that most of CTest arguments
   -- are not expected to be used (or work) with this plugin, but some might be useful
   -- depending on your needs. For instance:
