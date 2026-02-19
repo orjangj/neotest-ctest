@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/orjangj/neotest-ctest/compare/v0.2.0...v0.3.0) (2026-02-19)
+
+
+### Features
+
+* add `cmd` config to allow for nonstandard CTest executable ([#52](https://github.com/orjangj/neotest-ctest/issues/52)) ([1e35ca8](https://github.com/orjangj/neotest-ctest/commit/1e35ca810ea0070ed83888ac3c3549b0bdfb250e))
+
 ## [0.2.0](https://github.com/orjangj/neotest-ctest/compare/v0.1.1...v0.2.0) (2025-07-30)
 
 
