@@ -112,7 +112,7 @@ function gtest.build_parameterized(source, parent)
 
   local positions = {}
 
-  for _, match in normalized_query:iter_matches(root, source) do
+  for _, match in normalized_query:iter_matches(root, source, nil, nil, { all = false }) do
     local captured_nodes = {}
     for i, capture in ipairs(normalized_query.captures) do
       captured_nodes[capture] = match[i]
