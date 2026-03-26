@@ -18,6 +18,14 @@ describe("framework.detect", function()
     lib.files.read.returns("#include \"catch2/catch_test_macros.hpp\"")
     actual = framework.detect(ignore_arg)
     assert.are.same(expected, actual)
+
+    lib.files.read.returns("#include <catch_amalgamated.hpp>")
+    actual = framework.detect(ignore_arg)
+    assert.are.same(expected, actual)
+
+    lib.files.read.returns("#include \"catch_amalgamated.hpp\"")
+    actual = framework.detect(ignore_arg)
+    assert.are.same(expected, actual)
   end)
 
   it("should discover doctest framework", function()

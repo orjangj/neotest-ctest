@@ -6,12 +6,12 @@ catch2.include_query = [[
   ;; query
   (preproc_include
     path: (system_lib_string) @system.include
-    (#match? @system.include "^\\<catch2/.*\\>$")
+    (#match? @system.include "^\\<(catch2/.*|catch_amalgamated\.hpp)\\>$")
   )
   ;; query
   (preproc_include
     path: (string_literal) @local.include
-    (#match? @local.include "^\"catch2/.*\"$")
+    (#match? @local.include "^\"(catch2/.*|catch_amalgamated\.hpp)\"$")
   )
 ]]
 catch2.tests_query = [[

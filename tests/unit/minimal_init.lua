@@ -18,7 +18,8 @@ local workspace = os.getenv("GITHUB_WORKSPACE")
 if not workspace then
   -- NOTE: Fallback is intended for local development
   local this_file = debug.getinfo(1, "S").source:sub(2) -- remove leading @
-  workspace = vim.fn.fnamemodify(this_file, ":h")
+  -- Resolve to the repository root (two levels up from tests/unit/)
+  workspace = vim.fn.fnamemodify(this_file, ":p:h:h:h")
 end
 
 require("lazy").setup({
@@ -27,7 +28,7 @@ require("lazy").setup({
   dependencies = {
     { "nvim-neotest/nvim-nio" },
     { "nvim-lua/plenary.nvim" },
-    { "nvim-treesitter/nvim-treesitter" },
+    { "nvim-treesitter/nvim-treesitter", branch = "master" },
     { "orjangj/neotest-ctest" },
   },
   opts = function()
