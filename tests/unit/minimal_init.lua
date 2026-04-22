@@ -24,7 +24,7 @@ end
 
 require("lazy").setup({
   "nvim-neotest/neotest",
-  commit = "52fca6717ef972113ddd6ca223e30ad0abb2800c", -- see: https://github.com/nvim-neotest/neotest/issues/531
+  commit = "fd0b7986dd0ae04e38ec7dc0c78a432e3820839c", -- see: https://github.com/nvim-neotest/neotest/issues/531 and https://github.com/nvim-neotest/neotest/pull/596
   dependencies = {
     { "nvim-neotest/nvim-nio" },
     { "nvim-lua/plenary.nvim" },
@@ -32,8 +32,6 @@ require("lazy").setup({
     { "orjangj/neotest-ctest" },
   },
   opts = function()
-    local ts_config = require("nvim-treesitter.configs")
-    ts_config.setup({ ensure_installed = { "c", "cpp", "lua" } })
     return { adapters = { require("neotest-ctest") } }
   end,
 }, {
@@ -43,3 +41,6 @@ require("lazy").setup({
     fallback = true,
   },
 })
+
+-- Ensure the cpp treesitter parser is installed synchronously before tests run
+pcall(vim.cmd, "TSInstallSync cpp")

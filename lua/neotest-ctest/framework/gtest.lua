@@ -112,10 +112,10 @@ function gtest.build_parameterized(source, parent)
 
   local positions = {}
 
-  for _, match in normalized_query:iter_matches(root, source, nil, nil, { all = false }) do
+  for _, match in normalized_query:iter_matches(root, source, nil, nil, { all = true }) do
     local captured_nodes = {}
     for i, capture in ipairs(normalized_query.captures) do
-      captured_nodes[capture] = match[i]
+      captured_nodes[capture] = match[i] and match[i][1] or nil
     end
 
     local group = vim.treesitter.get_node_text(captured_nodes["parameterized.group"], source)
