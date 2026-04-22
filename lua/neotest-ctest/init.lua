@@ -97,10 +97,7 @@ function adapter.build_spec(args)
     end
 
     if not dap_test then
-      vim.notify(
-        "neotest-ctest: No executable found for DAP debugging.",
-        vim.log.levels.ERROR
-      )
+      vim.notify("neotest-ctest: No executable found for DAP debugging.", vim.log.levels.ERROR)
       return nil
     end
 
