@@ -64,7 +64,6 @@
 - Some of the frameworks, such as `catch2` and `doctest`, enumerates test case names interchangeably. This makes it
   impossible for `neotest-ctest` to reliably map them to neotest positions. Please ensure that test case names are
   uniquely defined if you use multiple frameworks together!
-- Does not support neotest's `dap` strategy for debugging tests (yet)
 
 ## Debugging
 
