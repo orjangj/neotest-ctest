@@ -51,6 +51,9 @@ local default_config = {
   frameworks = { "gtest", "catch2", "doctest", "cpputest" },
   cmd = { "ctest" },
   extra_args = {},
+  -- DAP adapter name to use for debugging (e.g. "codelldb", "cppdbg").
+  -- Set to nil to disable debug support.
+  dap_adapter = nil,
 }
 
 local config = default_config

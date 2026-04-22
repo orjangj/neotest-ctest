@@ -27,6 +27,7 @@
 
 - [Features](#features)
 - [Limitations](#limitations)
+- [Debugging](#debugging)
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Usage](#usage)
@@ -64,6 +65,44 @@
   impossible for `neotest-ctest` to reliably map them to neotest positions. Please ensure that test case names are
   uniquely defined if you use multiple frameworks together!
 - Does not support neotest's `dap` strategy for debugging tests (yet)
+
+## Debugging
+
+
+neotest-ctest supports neotest's `dap` strategy for debugging individual tests via
+[nvim-dap](https://github.com/mfussenegger/nvim-dap). When a test is run with the `dap`
+strategy, the test executable is launched directly under the debugger instead of via CTest.
+
+### Requirements
+
+- [nvim-dap](https://github.com/mfussenegger/nvim-dap) installed and configured
+- A DAP adapter for C/C++ set up (e.g. `codelldb` or `cppdbg`)
+
+### Setup
+
+Set the `dap_adapter` option to the name of your DAP adapter in the plugin setup:
+
+```lua
+require("neotest-ctest").setup({
+  -- Name of the nvim-dap adapter to use for debugging.
+  -- Must match the adapter name registered in nvim-dap.
+  -- Common values: "codelldb", "cppdbg"
+  dap_adapter = "codelldb",
+})
+```
+
+### Usage
+
+Use the neotest `dap` strategy to debug the nearest test:
+
+```lua
+-- Debug nearest test
+{ "<leader>td", function() require("neotest").run.run({ strategy = "dap" }) end, desc = "Debug Nearest" },
+```
+
+> **Note:** Debugging is most reliable when run on a single test node. When running a file
+> or namespace, the first test with a known executable will be launched.
+
 
 ## Requirements
 
