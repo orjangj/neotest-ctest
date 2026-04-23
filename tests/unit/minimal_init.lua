@@ -42,5 +42,3 @@ require("lazy").setup({
   },
 })
 
--- Ensure the cpp treesitter parser is installed synchronously before tests run
-pcall(vim.cmd, "TSInstallSync cpp")
