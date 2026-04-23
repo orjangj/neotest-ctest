@@ -68,8 +68,8 @@ describe("ctest:testcases", function()
 
     local actual_testcases = ctest:testcases()
     local expected_testcases = {
-      ["First"] = 1,
-      ["Second"] = 2,
+      ["First"] = { index = 1, executable = nil, args = {} },
+      ["Second"] = { index = 2, executable = nil, args = {} },
     }
 
     assert.are.same(expected_testcases, actual_testcases)

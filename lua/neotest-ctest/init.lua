@@ -62,7 +62,10 @@ function adapter.build_spec(args)
   -- NOTE: The '-I Start,End,Stride,test#,test#,...' option runs the specified tests in the
   -- range starting from number Start, ending at number End, incremented by number Stride.
   -- If Start, End and Stride are set to 0, then CTest will run all test# as specified.
-  local filter = string.format("-I 0,0,0,%s", table.concat(runnable_tests, ","))
+  local runnable_indices = vim.tbl_map(function(t)
+    return t and t.index or nil
+  end, runnable_tests)
+  local filter = string.format("-I 0,0,0,%s", table.concat(runnable_indices, ","))
 
   local extra_args = config.extra_args or {}
   vim.list_extend(extra_args, args.extra_args or {})
@@ -70,6 +73,51 @@ function adapter.build_spec(args)
 
   local command = ctest:command(ctest_args)
   local framework = require("neotest-ctest.framework").detect(position.path)
+
+  -- DAP strategy: launch the test executable directly under the debugger.
+  -- Only supported when a single test is selected and dap_adapter is configured.
+  if args.strategy == "dap" then
+    local dap_adapter = config.dap_adapter
+    if not dap_adapter then
+      vim.notify(
+        "neotest-ctest: DAP debugging requested but 'dap_adapter' is not configured. "
+          .. "Set dap_adapter = 'codelldb' (or 'cppdbg') in the adapter setup.",
+        vim.log.levels.ERROR
+      )
+      return nil
+    end
+
+    -- Find the first runnable test that has an executable
+    local dap_test = nil
+    for _, t in ipairs(runnable_tests) do
+      if t and t.executable then
+        dap_test = t
+        break
+      end
+    end
+
+    if not dap_test then
+      vim.notify("neotest-ctest: No executable found for DAP debugging.", vim.log.levels.ERROR)
+      return nil
+    end
+
+    return {
+      command = command,
+      strategy = {
+        type = dap_adapter,
+        request = "launch",
+        name = "Debug CTest",
+        program = dap_test.executable,
+        args = dap_test.args,
+        cwd = root,
+        stopAtEntry = false,
+      },
+      context = {
+        ctest = ctest,
+        framework = framework,
+      },
+    }
+  end
 
   return {
     command = command,

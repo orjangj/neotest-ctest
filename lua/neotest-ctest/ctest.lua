@@ -80,7 +80,12 @@ function ctest:testcases()
     local decoded = vim.json.decode(output)
 
     for index, test in ipairs(decoded.tests) do
-      testcases[test.name] = index
+      local cmd = test.command or {}
+      testcases[test.name] = {
+        index = index,
+        executable = cmd[1],
+        args = vim.list_slice(cmd, 2),
+      }
     end
   else
     -- TODO: log error?
