@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.0](https://github.com/orjangj/neotest-ctest/compare/v0.2.0...v0.3.0) (2026-04-23)
+
+
+### Features
+
+* add `cmd` config to allow for nonstandard CTest executable ([#52](https://github.com/orjangj/neotest-ctest/issues/52)) ([1e35ca8](https://github.com/orjangj/neotest-ctest/commit/1e35ca810ea0070ed83888ac3c3549b0bdfb250e))
+* add debug test support ([#56](https://github.com/orjangj/neotest-ctest/issues/56)) ([ec9a505](https://github.com/orjangj/neotest-ctest/commit/ec9a505f5f87d51ac8a35b1adffd38de8c44f7d8)), closes [#15](https://github.com/orjangj/neotest-ctest/issues/15)
+* support catch2 amalgamated include pattern ([#55](https://github.com/orjangj/neotest-ctest/issues/55)) ([4c99a85](https://github.com/orjangj/neotest-ctest/commit/4c99a85a95cea0bf22e228c9886da8be8bdb2530)), closes [#54](https://github.com/orjangj/neotest-ctest/issues/54)
+
 ## [0.2.0](https://github.com/orjangj/neotest-ctest/compare/v0.1.1...v0.2.0) (2025-07-30)
 
 
