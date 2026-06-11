@@ -13,6 +13,18 @@ catch2.include_query = [[
     path: (string_literal) @local.include
     (#match? @local.include "^\"(catch2/.*|catch_amalgamated\.hpp)\"$")
   )
+  ;; query
+  (call_expression
+    function: (identifier) @test.kind
+    (#any-of? @test.kind
+      "TEST_CASE"
+      "TEST_CASE_METHOD"
+      "TEMPLATE_TEST_CASE"
+      "TEMPLATE_TEST_CASE_METHOD"
+      "SCENARIO"
+      "SCENARIO_METHOD"
+    )
+  )
 ]]
 catch2.tests_query = [[
   ;; query
