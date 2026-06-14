@@ -1,4 +1,4 @@
-.PHONY: setup test unit integration
+.PHONY: setup test unit integration format
 
 SANDBOX?=.sandbox
 
@@ -13,6 +13,9 @@ PLENARY_OPTS = {minimal_init='${MINIMAL_INIT}', sequential=true}
 setup:
 	mkdir -p ${XDG_CACHE_HOME} ${XDG_CONFIG_HOME} ${XDG_DATA_HOME} ${XDG_STATE_HOME}
 	nvim --headless -u ${MINIMAL_INIT} -c "TSInstallSync lua cpp c" -c q
+
+format:
+	stylua lua/ tests/
 
 test: unit integration ;
 
