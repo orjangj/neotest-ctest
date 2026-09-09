@@ -216,6 +216,122 @@ describe("gtest.parse_positions", function()
     assert.are.same(expected_positions[3][4][1], actual_positions[3][4][1])
     assert.are.same(expected_positions[3][5][1], actual_positions[3][5][1])
   end)
+  it("discovers TYPED_TEST macro", function()
+    -- NOTE: It is a unit test, we cannot use ctest. This just tests
+    -- that we really detect the TYPED_TEST using treesitter, and
+    -- that the default return when we cant use ctest is a namespace +
+    -- a child named after the parent.
+    local test_file = vim.loop.cwd() .. "/tests/unit/data/gtest/TYPED_TEST_test.cpp"
+    local actual_positions = gtest.parse_positions(test_file):to_list()
+    local expected_positions = {
+      {
+        id = test_file,
+        name = "TYPED_TEST_test.cpp",
+        path = test_file,
+        range = { 0, 0, 13, 0 },
+        type = "file",
+      },
+      {
+        {
+          id = ("%s::%s"):format(test_file, "TypedFixture.First"),
+          name = "TypedFixture.First",
+          path = test_file,
+          range = { 7, 0, 7, 54 },
+          type = "namespace",
+        },
+        {
+          {
+            id = ("%s::%s::%s"):format(test_file, "TypedFixture.First", "TypedFixture.First"),
+            name = "TypedFixture.First",
+            path = test_file,
+            type = "test",
+          },
+        },
+      },
+      {
+        {
+          id = ("%s::%s"):format(test_file, "TypedFixture.Second"),
+          name = "TypedFixture.Second",
+          path = test_file,
+          range = { 9, 0, 12, 1 },
+          type = "namespace",
+        },
+        {
+          {
+            id = ("%s::%s::%s"):format(test_file, "TypedFixture.Second", "TypedFixture.Second"),
+            name = "TypedFixture.Second",
+            path = test_file,
+            type = "test",
+          },
+        },
+      },
+    }
+
+    assert.are.same(expected_positions[1], actual_positions[1])
+    assert.are.same(expected_positions[2][1], actual_positions[2][1])
+    assert.are.same(expected_positions[2][2][1], actual_positions[2][2][1])
+    assert.are.same(expected_positions[3][1], actual_positions[3][1])
+    assert.are.same(expected_positions[3][2][1], actual_positions[3][2][1])
+  end)
+
+  it("discovers TYPED_TEST_P macro", function()
+    -- Like the TYPED_TEST unit test, this only tests
+    -- that we detect TYPED_TEST_P properly and that
+    -- the default is what we expect it to be.
+    local test_file = vim.loop.cwd() .. "/tests/unit/data/gtest/TYPED_TEST_P_test.cpp"
+    local actual_positions = gtest.parse_positions(test_file):to_list()
+    local expected_positions = {
+      {
+        id = test_file,
+        name = "TYPED_TEST_P_test.cpp",
+        path = test_file,
+        range = { 0, 0, 17, 0 },
+        type = "file",
+      },
+      {
+        {
+          id = ("%s::%s"):format(test_file, "TypedFixtureP.First"),
+          name = "TypedFixtureP.First",
+          path = test_file,
+          range = { 6, 0, 6, 57 },
+          type = "namespace",
+        },
+        {
+          {
+            id = ("%s::%s::%s"):format(test_file, "TypedFixtureP.First", "TypedFixtureP.First"),
+            name = "TypedFixtureP.First",
+            path = test_file,
+            type = "test",
+          },
+        },
+      },
+      {
+        {
+          id = ("%s::%s"):format(test_file, "TypedFixtureP.Second"),
+          name = "TypedFixtureP.Second",
+          path = test_file,
+          range = { 8, 0, 11, 1 },
+          type = "namespace",
+        },
+        {
+          {
+            id = ("%s::%s::%s"):format(test_file, "TypedFixtureP.Second", "TypedFixtureP.Second"),
+            name = "TypedFixtureP.Second",
+            path = test_file,
+            type = "test",
+          },
+        },
+      },
+    }
+
+    -- NOTE: assert.are.same() crops the output when table is too deep.
+    -- Splitting the assertions for increased readability in case of failure.
+    assert.are.same(expected_positions[1], actual_positions[1])
+    assert.are.same(expected_positions[2][1], actual_positions[2][1])
+    assert.are.same(expected_positions[2][2][1], actual_positions[2][2][1])
+    assert.are.same(expected_positions[3][1], actual_positions[3][1])
+    assert.are.same(expected_positions[3][2][1], actual_positions[3][2][1])
+  end)
 end)
 
 describe("gtest.parse_errors", function()

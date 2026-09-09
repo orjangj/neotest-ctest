@@ -11,7 +11,9 @@ function ctest:run(args)
   return result.stdout
 end
 
-function ctest:new(cwd)
+---@param cwd string
+---@return string|nil
+function ctest.find_test_dir(cwd)
   local scandir = require("plenary.scandir")
 
   local ctest_roots = scandir.scan_dir(cwd, {
@@ -20,8 +22,11 @@ function ctest:new(cwd)
     search_pattern = "CTestTestfile.cmake",
     silent = true,
   })
+  return next(ctest_roots) and lib.files.parent(ctest_roots[1]) or nil
+end
 
-  local test_dir = next(ctest_roots) and lib.files.parent(ctest_roots[1]) or nil
+function ctest:new(cwd)
+  local test_dir = ctest.find_test_dir(cwd)
 
   if not test_dir then
     error("Failed to locate CTest test directory")
