@@ -224,3 +224,117 @@ describe("with TEST_P macro", function()
     assert.equals("failed", results[values_one_id].status)
   end)
 end)
+
+describe("with TYPED_TEST macro", function()
+  local state, test_file
+
+  before_each(function()
+    state = utils.setup()
+    test_file = state.example_root .. "/gtest/TYPED_TEST_test.cpp"
+  end)
+
+  it("run single type instance", function()
+    local id = utils.make_neotest_id(
+      test_file,
+      { namespace = "TypedFixture.BySize", name = "TypedFixture.BySize<int>" }
+    )
+
+    state.neotest.run.run(id)
+
+    local results = state.client:get_results(state.adapter_id)
+
+    assert.equals("passed", results[id].status)
+  end)
+
+  it("run all type instances of a typed test", function()
+    local id = utils.make_neotest_id(test_file, { name = "TypedFixture.BySize" })
+    local int_id = utils.make_neotest_id(
+      test_file,
+      { namespace = "TypedFixture.BySize", name = "TypedFixture.BySize<int>" }
+    )
+    local double_id = utils.make_neotest_id(
+      test_file,
+      { namespace = "TypedFixture.BySize", name = "TypedFixture.BySize<double>" }
+    )
+
+    state.neotest.run.run(id)
+
+    local results = state.client:get_results(state.adapter_id)
+
+    assert.equals("failed", results[id].status)
+    assert.equals("passed", results[int_id].status)
+    assert.equals("failed", results[double_id].status)
+  end)
+
+  it("run whole file with typed tests", function()
+    local id = utils.make_neotest_id(test_file)
+    local ok_int_id = utils.make_neotest_id(
+      test_file,
+      { namespace = "TypedFixture.Ok", name = "TypedFixture.Ok<int>" }
+    )
+
+    state.neotest.run.run(id)
+
+    local results = state.client:get_results(state.adapter_id)
+
+    assert.equals("failed", results[id].status)
+    assert.equals("passed", results[ok_int_id].status)
+  end)
+end)
+
+describe("with TYPED_TEST_P macro", function()
+  local state, test_file
+
+  before_each(function()
+    state = utils.setup()
+    test_file = state.example_root .. "/gtest/TYPED_TEST_P_test.cpp"
+  end)
+
+  it("run single type instance", function()
+    local id = utils.make_neotest_id(
+      test_file,
+      { namespace = "TypedFixtureP.BySize", name = "P1/TypedFixtureP.BySize<int>" }
+    )
+
+    state.neotest.run.run(id)
+
+    local results = state.client:get_results(state.adapter_id)
+
+    assert.equals("passed", results[id].status)
+  end)
+
+  it("run all type instances of a typed test", function()
+    local id = utils.make_neotest_id(test_file, { name = "TypedFixtureP.BySize" })
+    local int_id = utils.make_neotest_id(
+      test_file,
+      { namespace = "TypedFixtureP.BySize", name = "P1/TypedFixtureP.BySize<int>" }
+    )
+    local double_id = utils.make_neotest_id(
+      test_file,
+      { namespace = "TypedFixtureP.BySize", name = "P1/TypedFixtureP.BySize<double>" }
+    )
+
+    state.neotest.run.run(id)
+
+    local results = state.client:get_results(state.adapter_id)
+
+    assert.equals("failed", results[id].status)
+    assert.equals("passed", results[int_id].status)
+    assert.equals("failed", results[double_id].status)
+  end)
+
+  it("run whole file with typed tests", function()
+    local id = utils.make_neotest_id(test_file)
+    local ok_int_id = utils.make_neotest_id(
+      test_file,
+      { namespace = "TypedFixtureP.Ok", name = "P1/TypedFixtureP.Ok<int>" }
+    )
+
+    state.neotest.run.run(id)
+
+    local results = state.client:get_results(state.adapter_id)
+
+    assert.equals("failed", results[id].status)
+    assert.equals("passed", results[ok_int_id].status)
+  end)
+end)
