@@ -38,6 +38,15 @@ describe("position.type == test", function()
     }
   end)
 
+  it("adapter.results should not attempt to parse test results in DAP mode", function()
+    spec.context.ctest.parse_test_results = function()
+      assert(false, "Should not attempt to read file in DAP mode")
+    end
+    spec.context.is_dap = true
+    local results = adapter.results(spec, nil, tree)
+    assert.equals("skipped", results[test_file .. "::Suite.First"].status)
+  end)
+
   it("adapter.results should set status as 'passed' given a passing test", function()
     spec.context.ctest.parse_test_results = function()
       return {

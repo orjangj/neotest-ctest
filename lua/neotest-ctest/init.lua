@@ -115,6 +115,7 @@ function adapter.build_spec(args)
       context = {
         ctest = ctest,
         framework = framework,
+        is_dap = true,
       },
     }
   end
@@ -128,7 +129,7 @@ function adapter.build_spec(args)
   }
 end
 
-local function prepare_results(tree, testsuite, framework)
+local function prepare_results(tree, testsuite, framework, is_dap)
   local node = tree:data()
   local results = {}
 
@@ -148,11 +149,29 @@ local function prepare_results(tree, testsuite, framework)
     end
 
     local status = failed > 0 and "failed" or passed > 0 and "passed" or "skipped"
-    results[node.id] = { status = status, output = testsuite.summary.output }
+    if not is_dap then
+      results[node.id] = { status = status, output = testsuite.summary.output }
+    else
+      logger.warn(
+        string.format(
+          "Results not supported while testing with DAP. Marking testcase '%s' as skipped.",
+          node.name
+        )
+      )
+      results[node.id] = { status = "skipped" }
+    end
   elseif node.type == "test" then
     local testcase = testsuite[node.name]
 
-    if not testcase then
+    if is_dap then
+      logger.warn(
+        string.format(
+          "Results not supported while testing with DAP. Marking testcase '%s' as skipped.",
+          node.name
+        )
+      )
+      results[node.id] = { status = "skipped" }
+    elseif not testcase then
       logger.warn(string.format("Unknown CTest testcase '%s' (marked as skipped)", node.name))
       results[node.id] = { status = "skipped" }
     else
@@ -187,8 +206,11 @@ end
 
 function adapter.results(spec, _, tree)
   local context = spec.context
-  local testsuite = context.ctest:parse_test_results()
-  return prepare_results(tree, testsuite, context.framework)
+  local testsuite = {}
+  if not context.is_dap then
+    testsuite = context.ctest:parse_test_results()
+  end
+  return prepare_results(tree, testsuite, context.framework, context.is_dap)
 end
 
 return adapter
