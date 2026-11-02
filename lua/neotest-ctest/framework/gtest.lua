@@ -1,4 +1,5 @@
 local logger = require("neotest.logging")
+local output_utils = require("neotest-ctest.framework.output")
 local gtest = {}
 
 gtest.lang = "cpp"
@@ -44,6 +45,7 @@ gtest.tests_query = [[
 ]]
 
 function gtest.parse_errors(output)
+  output = output_utils.normalize(output)
   local capture = vim.trim(string.match(output, "%[%s+RUN%s+%].-[\r\n](.-)%[%s+FAILED%s+%]"))
 
   if not capture then
@@ -54,6 +56,10 @@ function gtest.parse_errors(output)
   -- NOTE: This is a very hacky solution to transform gtest <v1.14.0 to a v.14.0+ formatted error message output
   local tmp = ""
   for str in string.gmatch(capture, "[^\r\n$]+") do
+    local line, message = string.match(str, "^.-:(%d+):%s+error:%s?(.*)$")
+    if line then
+      str = string.format(":%s: Failure\n%s", line, message)
+    end
     local line = string.match(str, ".-:(%d+):%sFailure")
     if line then
       tmp = tmp .. "\n\n" .. str

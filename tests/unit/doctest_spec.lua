@@ -125,6 +125,29 @@ describe("doctest.parse_positions", function()
 end)
 
 describe("doctest.parse_errors", function()
+  for _, newline in ipairs({ "\n", "\r\n" }) do
+    it("parses Windows diagnostics with " .. vim.inspect(newline) .. " line endings", function()
+      local output = table.concat({
+        "===============================================================================",
+        [[C:\path with spaces\TEST_CASE_test.cpp(10):]],
+        "TEST CASE:  Second",
+        "",
+        [[C:\path with spaces\TEST_CASE_test.cpp(11): ERROR: CHECK( false ) is NOT correct!]],
+        "  values: CHECK( false )",
+        "",
+        [[C:\path with spaces\TEST_CASE_test.cpp(12): FATAL ERROR: REQUIRE( false ) is NOT correct!]],
+        "  values: REQUIRE( false )",
+        "",
+        "===============================================================================",
+      }, newline)
+
+      assert.are.same({
+        { line = 11, message = "CHECK( false ) is NOT correct!\n  values: CHECK( false )" },
+        { line = 12, message = "REQUIRE( false ) is NOT correct!\n  values: REQUIRE( false )" },
+      }, doctest.parse_errors(output))
+    end)
+  end
+
   it("parses diagnostics correctly", function()
     -- NOTE: Partial doctest output (only the relevant portions are included
     local output = [[

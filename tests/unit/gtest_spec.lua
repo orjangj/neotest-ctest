@@ -219,6 +219,32 @@ describe("gtest.parse_positions", function()
 end)
 
 describe("gtest.parse_errors", function()
+  for _, newline in ipairs({ "\n", "\r\n" }) do
+    it("parses Windows diagnostics with " .. vim.inspect(newline) .. " line endings", function()
+      local output = table.concat({
+        "[ RUN      ] Suite.Second",
+        [[C:\path with spaces\TEST_test.cpp(8): error: Expected equality of these values:]],
+        "  actual",
+        "    Which is: 15",
+        "  10",
+        "",
+        [[C:\path with spaces\TEST_test.cpp(9): error: Value of: false]],
+        "  Actual: false",
+        "Expected: true",
+        "",
+        "[  FAILED  ] Suite.Second (0 ms)",
+      }, newline)
+
+      assert.are.same({
+        {
+          line = 8,
+          message = "Expected equality of these values:\n  actual\n    Which is: 15\n  10",
+        },
+        { line = 9, message = "Value of: false\n  Actual: false\nExpected: true" },
+      }, gtest.parse_errors(output))
+    end)
+  end
+
   it("parses gtest >= v1.14.0 diagnostics correctly", function()
     -- NOTE: Partial GTest output (only the relevant portions are included)
     local output = [[
