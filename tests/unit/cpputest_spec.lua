@@ -53,6 +53,30 @@ describe("cpputest.parse_positions", function()
 end)
 
 describe("cpputest.parse_errors", function()
+  for _, location in ipairs({
+    [[C:\path with spaces\TEST_test.cpp(10)]],
+    [[C:\path with spaces\TEST_test.cpp:10]],
+  }) do
+    for _, newline in ipairs({ "\n", "\r\n" }) do
+      it("parses " .. location .. " with " .. vim.inspect(newline) .. " line endings", function()
+        local output = table.concat({
+          "TEST(Suite, First)",
+          location .. ": error: Failure in TEST(Suite, First)",
+          "    expected <2>",
+          "    but was  <1>",
+          "",
+          " - 1 ms",
+          "",
+          "Errors (1 failures, 1 tests, 1 ran, 1 checks, 0 ignored, 0 filtered out, 1 ms)",
+        }, newline)
+
+        assert.are.same({
+          { line = 10, message = "    expected <2>\n    but was  <1>" },
+        }, cpputest.parse_errors(output))
+      end)
+    end
+  end
+
   it("parses diagnostics correctly", function()
     -- NOTE: Partial cpputest output (only the relevant portions are included)
     local output = [[

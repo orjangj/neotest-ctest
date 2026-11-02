@@ -1,4 +1,5 @@
 local logger = require("neotest.logging")
+local output_utils = require("neotest-ctest.framework.output")
 local catch2 = {}
 
 catch2.lang = "cpp"
@@ -58,6 +59,7 @@ catch2.tests_query = [[
 ]]
 
 function catch2.parse_errors(output)
+  output = output_utils.normalize(output)
   local capture = string.match(output, "%.%.%.+[\r\n](.-)%=%=%=+")
 
   if not capture then

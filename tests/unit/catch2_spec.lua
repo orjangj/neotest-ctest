@@ -125,6 +125,30 @@ describe("catch2.parse_positions", function()
 end)
 
 describe("catch2.parse_errors", function()
+  for _, newline in ipairs({ "\n", "\r\n" }) do
+    it("parses Windows diagnostics with " .. vim.inspect(newline) .. " line endings", function()
+      local output = table.concat({
+        [[C:\path with spaces\TEST_CASE_test.cpp(5)]],
+        "...............................................................................",
+        "",
+        [[C:\path with spaces\TEST_CASE_test.cpp(6): FAILED:]],
+        "  CHECK( false )",
+        "with expansion:",
+        "  false",
+        "",
+        [[C:\path with spaces\TEST_CASE_test.cpp(7): FAILED:]],
+        "  REQUIRE( false )",
+        "",
+        "===============================================================================",
+      }, newline)
+
+      assert.are.same({
+        { line = 6, message = "  CHECK( false )\nwith expansion:\n  false" },
+        { line = 7, message = "  REQUIRE( false )" },
+      }, catch2.parse_errors(output))
+    end)
+  end
+
   it("parses diagnostics correctly", function()
     -- NOTE: Partial catch2 output (only the relevant portions are included
     local output = [[

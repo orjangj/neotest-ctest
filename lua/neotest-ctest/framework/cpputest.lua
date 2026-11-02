@@ -1,3 +1,4 @@
+local output_utils = require("neotest-ctest.framework.output")
 local cpputest = {}
 
 cpputest.lang = "cpp"
@@ -32,6 +33,7 @@ cpputest.tests_query = [[
 ]]
 
 function cpputest.parse_errors(output)
+  output = output_utils.normalize(output)
   local errors = {}
 
   local t = {}
@@ -42,7 +44,7 @@ function cpputest.parse_errors(output)
   -- Narrow down the information we need
   t = vim.list_slice(t, 2, #t - 2)
 
-  local linenr = tonumber(vim.split(t[1], ":")[2])
+  local linenr = tonumber(string.match(t[1], ":(%d+):"))
   local reason = table.concat(vim.list_slice(t, 2), "\n")
   table.insert(errors, { line = linenr, message = reason })
 
